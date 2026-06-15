@@ -1,0 +1,48 @@
+openapi: 3.1.0
+info:
+  title: Finance Control Agent Gateway
+  version: 0.1.0
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+paths:
+  /api/agent/dashboard-summary:
+    get:
+      summary: get_dashboard_summary
+      description: Read-only dashboard summary for agents.
+  /api/agent/net-worth:
+    get:
+      summary: get_net_worth
+      description: Read-only bank net worth for agents.
+  /api/agent/category-breakdown:
+    get:
+      summary: get_category_breakdown
+      description: Read-only category breakdown.
+  /api/agent/monthly-cashflow:
+    get:
+      summary: get_monthly_cashflow
+      description: Read-only monthly cashflow.
+  /api/agent/recurring-expenses:
+    get:
+      summary: get_recurring_expenses
+      description: Read-only recurring expenses.
+  /api/agent/credit-card-summary:
+    get:
+      summary: get_credit_card_summary
+      description: Read-only credit card summary.
+  /api/agent/transactions/search:
+    post:
+      summary: search_transactions
+      description: Read-only transaction search.
+  /api/agent/context/generate:
+    post:
+      summary: generate_financial_context
+      description: Read-only structured financial context.
+  /api/agent/analyses:
+    post:
+      summary: save_agent_analysis
+      description: Writes only textual agent analysis to agent_analyses.

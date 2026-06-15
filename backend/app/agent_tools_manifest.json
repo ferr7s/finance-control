@@ -1,0 +1,106 @@
+{
+  "name": "Finance Control Agent Tools",
+  "version": "0.1.0",
+  "security": "All /api/agent/* routes require Authorization: Bearer <AGENT_API_KEY>. Agent tools cannot mutate financial records.",
+  "tools": [
+    {
+      "name": "get_dashboard_summary",
+      "description": "Return the current financial dashboard summary.",
+      "endpoint": "/api/agent/dashboard-summary",
+      "method": "GET",
+      "parameters": {},
+      "example_response": { "net_worth": "10000.00", "warnings": [] },
+      "readonly": true,
+      "write_safe": false,
+      "safety_note": "Read-only; no financial mutation."
+    },
+    {
+      "name": "get_net_worth",
+      "description": "Return bank net worth, account balances and unpaid bill total.",
+      "endpoint": "/api/agent/net-worth",
+      "method": "GET",
+      "parameters": {},
+      "example_response": { "accounts_balance": "12000.00", "open_bills_total": "2000.00", "net_worth": "10000.00" },
+      "readonly": true,
+      "write_safe": false,
+      "safety_note": "Read-only; no account edits."
+    },
+    {
+      "name": "get_category_breakdown",
+      "description": "Return current month expenses grouped by category.",
+      "endpoint": "/api/agent/category-breakdown",
+      "method": "GET",
+      "parameters": {},
+      "example_response": [{ "category": "alimentação", "amount": "900.00", "percentage": 30.0 }],
+      "readonly": true,
+      "write_safe": false,
+      "safety_note": "Read-only category analytics."
+    },
+    {
+      "name": "get_monthly_cashflow",
+      "description": "Return monthly income, expenses and result.",
+      "endpoint": "/api/agent/monthly-cashflow",
+      "method": "GET",
+      "parameters": {},
+      "example_response": [{ "month": "2026-06", "income": "10000.00", "expenses": "7000.00", "result": "3000.00" }],
+      "readonly": true,
+      "write_safe": false,
+      "safety_note": "Read-only cashflow analytics."
+    },
+    {
+      "name": "get_recurring_expenses",
+      "description": "Return recurring expenses detected by repeated description/category/amount.",
+      "endpoint": "/api/agent/recurring-expenses",
+      "method": "GET",
+      "parameters": {},
+      "example_response": [{ "description": "Netflix", "category": "assinaturas", "amount": "55.90", "occurrences": 4 }],
+      "readonly": true,
+      "write_safe": false,
+      "safety_note": "Read-only recurrence detection."
+    },
+    {
+      "name": "get_credit_card_summary",
+      "description": "Return card limits and unpaid/open bill totals.",
+      "endpoint": "/api/agent/credit-card-summary",
+      "method": "GET",
+      "parameters": {},
+      "example_response": [{ "name": "Nubank Cartão", "open_bill_amount": "2450.00" }],
+      "readonly": true,
+      "write_safe": false,
+      "safety_note": "Read-only card analytics."
+    },
+    {
+      "name": "search_transactions",
+      "description": "Search transactions by query, period, category, provider or type.",
+      "endpoint": "/api/agent/transactions/search",
+      "method": "POST",
+      "parameters": { "query": "iFood", "category": "alimentação", "limit": 50 },
+      "example_response": [{ "description": "iFood Restaurante", "amount": "-68.70" }],
+      "readonly": true,
+      "write_safe": false,
+      "safety_note": "Read-only transaction search."
+    },
+    {
+      "name": "generate_financial_context",
+      "description": "Generate structured context for an external agent.",
+      "endpoint": "/api/agent/context/generate",
+      "method": "POST",
+      "parameters": {},
+      "example_response": { "analyzed_period": "2026-06", "safety_instructions": ["Não inventar dados."] },
+      "readonly": true,
+      "write_safe": false,
+      "safety_note": "Read-only context generation with safety instructions."
+    },
+    {
+      "name": "save_agent_analysis",
+      "description": "Save a textual analysis produced by an external agent.",
+      "endpoint": "/api/agent/analyses",
+      "method": "POST",
+      "parameters": { "source": "hermes", "title": "Análise", "content": "Texto", "metadata": {} },
+      "example_response": { "source": "hermes", "title": "Análise" },
+      "readonly": false,
+      "write_safe": true,
+      "safety_note": "Only writes to agent_analyses; cannot mutate financial records."
+    }
+  ]
+}
