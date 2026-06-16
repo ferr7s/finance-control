@@ -50,6 +50,14 @@ class CreditCardSummaryItem(BaseModel):
     closing_day: int | None
 
 
+class LargestExpenseItem(BaseModel):
+    date: str
+    description: str
+    amount: Decimal
+    category: str | None
+    provider: str
+
+
 class FinancialContext(BaseModel):
     analyzed_period: str
     generated_at: str
@@ -62,7 +70,7 @@ class FinancialContext(BaseModel):
     monthly_result: Decimal
     estimated_available_until_month_end: Decimal | None
     category_breakdown: list[CategoryBreakdownItem]
-    largest_expenses: list[dict]
+    largest_expenses: list[LargestExpenseItem]
     recurring_expenses: list[RecurringExpenseItem]
     credit_cards: list[CreditCardSummaryItem]
     alerts: list[str]

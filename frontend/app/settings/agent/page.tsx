@@ -22,7 +22,13 @@ const mcpConfig = {
 };
 
 export default async function AgentSettingsPage() {
-  const manifest = await api.manifest();
+  const [manifest, agentHealth] = await Promise.all([
+    api.manifest(),
+    api
+      .agentHealth()
+      .then((health) => ({ ok: true as const, health }))
+      .catch(() => ({ ok: false as const, health: null }))
+  ]);
   return (
     <div className="space-y-4">
       <section className="grid gap-4 lg:grid-cols-3">
@@ -31,10 +37,15 @@ export default async function AgentSettingsPage() {
             <CardTitle>Status do Agent Gateway</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-slate-300">
-            <Badge className="gap-2 border-accent/30 text-accent">
+            <Badge className={`gap-2 ${agentHealth.ok ? "border-accent/30 text-accent" : "border-warning/40 text-warning"}`}>
               <ShieldCheck size={14} />
-              Protegido por API key
+              {agentHealth.ok ? "Online e read-only" : "API key diferente do exemplo"}
             </Badge>
+            {agentHealth.ok ? (
+              <div className="text-xs text-slate-500">
+                Status: {agentHealth.health.status} · Read-only: {agentHealth.health.read_only ? "sim" : "não"}
+              </div>
+            ) : null}
             <div className="font-mono text-xs text-slate-500">http://localhost:8000</div>
           </CardContent>
         </Card>
