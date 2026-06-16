@@ -16,6 +16,10 @@ import type {
   TransactionQueryFilters
 } from "@/types";
 
+export type AccountPayload = Omit<Account, "id">;
+export type CreditCardPayload = Omit<CreditCard, "id">;
+export type CreditCardBillPayload = Omit<CreditCardBill, "id" | "credit_card_id">;
+
 function baseUrl() {
   if (typeof window === "undefined") {
     return process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -34,6 +38,9 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   });
   if (!response.ok) {
     throw new Error(`API ${path} failed with ${response.status}`);
+  }
+  if (response.status === 204) {
+    return undefined as T;
   }
   return response.json() as Promise<T>;
 }
@@ -59,8 +66,21 @@ export const api = {
   updateTransaction: (id: string, payload: Partial<Transaction>) =>
     apiFetch<Transaction>(`/api/transactions/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
   accounts: () => apiFetch<Account[]>("/api/accounts"),
+  createAccount: (payload: AccountPayload) => apiFetch<Account>("/api/accounts", { method: "POST", body: JSON.stringify(payload) }),
+  updateAccount: (id: string, payload: Partial<AccountPayload>) =>
+    apiFetch<Account>(`/api/accounts/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  deleteAccount: (id: string) => apiFetch<void>(`/api/accounts/${id}`, { method: "DELETE" }),
   creditCards: () => apiFetch<CreditCard[]>("/api/credit-cards"),
+  createCreditCard: (payload: CreditCardPayload) => apiFetch<CreditCard>("/api/credit-cards", { method: "POST", body: JSON.stringify(payload) }),
+  updateCreditCard: (id: string, payload: Partial<CreditCardPayload>) =>
+    apiFetch<CreditCard>(`/api/credit-cards/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  deleteCreditCard: (id: string) => apiFetch<void>(`/api/credit-cards/${id}`, { method: "DELETE" }),
   bills: (cardId: string) => apiFetch<CreditCardBill[]>(`/api/credit-cards/${cardId}/bills`),
+  createBill: (cardId: string, payload: CreditCardBillPayload) =>
+    apiFetch<CreditCardBill>(`/api/credit-cards/${cardId}/bills`, { method: "POST", body: JSON.stringify(payload) }),
+  updateBill: (id: string, payload: Partial<CreditCardBillPayload>) =>
+    apiFetch<CreditCardBill>(`/api/credit-card-bills/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  deleteBill: (id: string) => apiFetch<void>(`/api/credit-card-bills/${id}`, { method: "DELETE" }),
   insights: () => apiFetch<Insight[]>("/api/insights"),
   generateInsights: () => apiFetch<Insight[]>("/api/insights/generate", { method: "POST", body: "{}" }),
   analyses: () => apiFetch<AgentAnalysis[]>("/api/agent-analyses"),
