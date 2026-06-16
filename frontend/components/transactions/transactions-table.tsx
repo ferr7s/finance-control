@@ -7,22 +7,59 @@ import { Button } from "@/components/ui/button";
 import { TransactionFilters } from "@/components/transactions/transaction-filters";
 import { api } from "@/lib/api";
 import { currency, shortDate } from "@/lib/formatters";
-import type { Transaction } from "@/types";
+import type { Transaction, TransactionQueryFilters } from "@/types";
 
 const categories = ["alimentação", "transporte", "saúde", "assinaturas", "moradia", "renda", "investimentos", "lazer", "outros"];
 
+function toApiFilters(filters: TransactionQueryFilters): TransactionQueryFilters {
+  return {
+    query: filters.query,
+    start_date: filters.start_date ? `${filters.start_date}T00:00:00` : undefined,
+    end_date: filters.end_date ? `${filters.end_date}T23:59:59` : undefined,
+    category: filters.category,
+    provider: filters.provider,
+    type: filters.type
+  };
+}
+
+function unique(values: Array<string | null | undefined>) {
+  return Array.from(new Set(values.filter((value): value is string => Boolean(value)))).sort((a, b) => a.localeCompare(b));
+}
+
+function accountOrCardLabel(transaction: Transaction) {
+  if (transaction.credit_card_id) return "Cartão";
+  if (transaction.account_id) return "Conta";
+  return transaction.payment_method || "-";
+}
+
 export function TransactionsTable({ initialTransactions }: { initialTransactions: Transaction[] }) {
   const [transactions, setTransactions] = useState(initialTransactions);
-  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<TransactionQueryFilters>({});
   const [saving, setSaving] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return transactions;
-    return transactions.filter((tx) =>
-      [tx.description, tx.provider, tx.type, tx.category, tx.payment_method].some((value) => (value || "").toLowerCase().includes(q))
-    );
-  }, [transactions, search]);
+  const providerOptions = useMemo(() => unique(initialTransactions.map((tx) => tx.provider)), [initialTransactions]);
+  const typeOptions = useMemo(() => unique(initialTransactions.map((tx) => tx.type)), [initialTransactions]);
+  const categoryOptions = useMemo(() => unique([...categories, ...initialTransactions.map((tx) => tx.category)]), [initialTransactions]);
+
+  async function applyFilters(nextFilters = filters) {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await api.transactions(toApiFilters(nextFilters));
+      setTransactions(result);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Falha ao filtrar transações.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function resetFilters() {
+    setFilters({});
+    await applyFilters({});
+  }
 
   async function updateCategory(transaction: Transaction, category: string) {
     setSaving(transaction.id);
@@ -36,7 +73,17 @@ export function TransactionsTable({ initialTransactions }: { initialTransactions
 
   return (
     <div className="space-y-4">
-      <TransactionFilters onSearch={setSearch} />
+      <TransactionFilters
+        filters={filters}
+        categoryOptions={categoryOptions}
+        providerOptions={providerOptions}
+        typeOptions={typeOptions}
+        loading={loading}
+        onChange={setFilters}
+        onApply={applyFilters}
+        onReset={resetFilters}
+      />
+      {error ? <div className="rounded-md border border-danger/40 bg-danger/10 p-3 text-sm text-danger">{error}</div> : null}
       <div className="overflow-x-auto rounded-lg border border-border">
         <table className="min-w-full divide-y divide-border text-sm">
           <thead className="bg-[#111923] text-left text-xs uppercase text-slate-500">
@@ -45,13 +92,14 @@ export function TransactionsTable({ initialTransactions }: { initialTransactions
               <th className="px-3 py-3">Descrição</th>
               <th className="px-3 py-3">Valor</th>
               <th className="px-3 py-3">Categoria</th>
+              <th className="px-3 py-3">Conta/cartão</th>
               <th className="px-3 py-3">Provedor</th>
               <th className="px-3 py-3">Tipo</th>
               <th className="px-3 py-3">Ações</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {filtered.map((tx) => (
+            {transactions.map((tx) => (
               <tr key={tx.id} className="bg-muted/35">
                 <td className="whitespace-nowrap px-3 py-3 text-slate-400">{shortDate(tx.date)}</td>
                 <td className="min-w-56 px-3 py-3">{tx.description}</td>
@@ -71,6 +119,7 @@ export function TransactionsTable({ initialTransactions }: { initialTransactions
                     ))}
                   </select>
                 </td>
+                <td className="px-3 py-3 text-slate-400">{accountOrCardLabel(tx)}</td>
                 <td className="px-3 py-3 text-slate-400">{tx.provider}</td>
                 <td className="px-3 py-3 text-slate-400">{tx.type}</td>
                 <td className="px-3 py-3">
@@ -80,6 +129,13 @@ export function TransactionsTable({ initialTransactions }: { initialTransactions
                 </td>
               </tr>
             ))}
+            {transactions.length === 0 ? (
+              <tr className="bg-muted/35">
+                <td className="px-3 py-6 text-center text-slate-500" colSpan={8}>
+                  Nenhuma transação encontrada para os filtros aplicados.
+                </td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </div>

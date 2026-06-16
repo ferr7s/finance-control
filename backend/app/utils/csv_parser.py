@@ -1,5 +1,7 @@
 import csv
+import hashlib
 from decimal import Decimal
+from datetime import datetime
 from typing import TextIO
 
 from app.utils.categorizer import categorize_transaction, infer_transaction_type
@@ -31,6 +33,23 @@ def _canonical_header(header: str) -> str:
     return normalized
 
 
+def _normalize_external_id_part(value: object) -> str:
+    return " ".join(str(value or "").strip().lower().split())
+
+
+def build_csv_external_id(provider: str, date: datetime, description: str, amount: Decimal) -> str:
+    fingerprint = "|".join(
+        [
+            "bank-csv",
+            _normalize_external_id_part(provider),
+            date.date().isoformat(),
+            _normalize_external_id_part(description),
+            str(amount.quantize(Decimal("0.01"))),
+        ]
+    )
+    return f"csv:{hashlib.sha256(fingerprint.encode('utf-8')).hexdigest()[:24]}"
+
+
 def parse_bank_csv(file_obj: TextIO) -> list[dict[str, object]]:
     sample = file_obj.read(4096)
     file_obj.seek(0)
@@ -46,14 +65,17 @@ def parse_bank_csv(file_obj: TextIO) -> list[dict[str, object]]:
         amount = parse_money(str(raw.get("amount") or "0"))
         explicit_type = raw.get("type")
         category = str(raw.get("category") or "").strip() or categorize_transaction(description)
+        date = parse_date(str(raw.get("date") or ""))
+        provider = str(raw.get("provider") or "csv").strip() or "csv"
         rows.append(
             {
-                "date": parse_date(str(raw.get("date") or "")),
+                "external_id": build_csv_external_id(provider, date, description, amount),
+                "date": date,
                 "description": description,
                 "amount": amount,
                 "type": infer_transaction_type(amount, description, str(explicit_type) if explicit_type else None),
                 "category": category,
-                "provider": str(raw.get("provider") or "csv").strip() or "csv",
+                "provider": provider,
                 "account": str(raw.get("account") or "").strip() or None,
                 "card": str(raw.get("card") or "").strip() or None,
                 "payment_method": "credit" if raw.get("card") else "unknown",

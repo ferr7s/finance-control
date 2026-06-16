@@ -51,6 +51,15 @@ export type Transaction = {
   is_recurring: boolean;
 };
 
+export type TransactionQueryFilters = {
+  query?: string;
+  start_date?: string;
+  end_date?: string;
+  category?: string;
+  provider?: string;
+  type?: string;
+};
+
 export type Insight = {
   id: string;
   type: string;
@@ -95,6 +104,14 @@ export type CategoryBreakdownItem = {
   percentage: number;
 };
 
+export type LargestExpense = {
+  date: string;
+  description: string;
+  amount: DecimalString;
+  category?: string | null;
+  provider: string;
+};
+
 export type RecurringExpense = {
   description: string;
   category?: string | null;
@@ -121,4 +138,9 @@ export type AgentTool = {
   readonly: boolean;
   write_safe: boolean;
   safety_note: string;
+};
+
+export type AgentHealth = {
+  status: string;
+  read_only: boolean;
 };

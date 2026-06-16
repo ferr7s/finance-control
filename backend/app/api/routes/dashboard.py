@@ -2,7 +2,14 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.schemas.dashboard import CategoryBreakdownItem, CreditCardSummaryItem, DashboardSummary, MonthlyCashflowPoint, RecurringExpenseItem
+from app.schemas.dashboard import (
+    CategoryBreakdownItem,
+    CreditCardSummaryItem,
+    DashboardSummary,
+    LargestExpenseItem,
+    MonthlyCashflowPoint,
+    RecurringExpenseItem,
+)
 from app.services import dashboard_service
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
@@ -36,3 +43,8 @@ def recurring_expenses(db: Session = Depends(get_db)):
 @router.get("/credit-card-summary", response_model=list[CreditCardSummaryItem])
 def credit_card_summary(db: Session = Depends(get_db)):
     return dashboard_service.get_credit_card_summary(db)
+
+
+@router.get("/largest-expenses", response_model=list[LargestExpenseItem])
+def largest_expenses(db: Session = Depends(get_db)):
+    return dashboard_service.get_largest_expenses(db)

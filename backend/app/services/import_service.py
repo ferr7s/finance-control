@@ -17,6 +17,7 @@ def import_bank_csv(db: Session, content: bytes) -> dict[str, int | list[str]]:
     for index, row in enumerate(rows, start=1):
         try:
             payload = TransactionCreate(
+                external_id=str(row["external_id"]),
                 provider=str(row["provider"]),
                 date=row["date"],
                 description=str(row["description"]),
