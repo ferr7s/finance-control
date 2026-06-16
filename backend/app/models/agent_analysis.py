@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, String, Text
+from sqlalchemy import DateTime, JSON, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -14,5 +14,5 @@ class AgentAnalysis(UUIDPrimaryKeyMixin, Base):
     source: Mapped[str] = mapped_column(String(80), default="hermes", nullable=False)
     title: Mapped[str] = mapped_column(String(180), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    metadata_json: Mapped[dict | None] = mapped_column("metadata", JSONB)
+    metadata_json: Mapped[dict | None] = mapped_column("metadata", JSONB().with_variant(JSON(), "sqlite"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
