@@ -60,6 +60,33 @@ export type TransactionQueryFilters = {
   type?: string;
 };
 
+export type CsvImportResult = {
+  total_rows: number;
+  imported: number;
+  ignored: number;
+  errors: string[];
+};
+
+export type CsvPreviewRow = {
+  status: "ready" | "duplicate" | string;
+  external_id: string;
+  date: string;
+  description: string;
+  amount: DecimalString;
+  type: string;
+  category: string;
+  provider: string;
+  payment_method: string;
+};
+
+export type CsvImportPreview = {
+  total_rows: number;
+  importable: number;
+  duplicates: number;
+  errors: string[];
+  sample_rows: CsvPreviewRow[];
+};
+
 export type Insight = {
   id: string;
   type: string;

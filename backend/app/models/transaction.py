@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import DateTime, ForeignKey, Index, Numeric, String, Text, Uuid, text
+from sqlalchemy import DateTime, ForeignKey, Index, JSON, Numeric, String, Text, Uuid, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -42,7 +42,7 @@ class Transaction(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     subcategory: Mapped[str | None] = mapped_column(String(120))
     merchant: Mapped[str | None] = mapped_column(String(160))
     is_recurring: Mapped[bool] = mapped_column(default=False, nullable=False)
-    raw_data: Mapped[dict | None] = mapped_column(JSONB)
+    raw_data: Mapped[dict | None] = mapped_column(JSONB().with_variant(JSON(), "sqlite"))
 
     account = relationship("Account", back_populates="transactions")
     credit_card = relationship("CreditCard", back_populates="transactions")
