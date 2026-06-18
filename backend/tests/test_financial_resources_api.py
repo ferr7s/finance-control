@@ -73,6 +73,35 @@ def test_accounts_crud(client: TestClient):
     assert client.get("/api/accounts").json() == []
 
 
+def test_deleting_account_preserves_associated_transactions(client: TestClient):
+    account = client.post(
+        "/api/accounts",
+        json={
+            "provider": "manual",
+            "name": "Conta Corrente",
+            "type": "checking",
+            "currency": "BRL",
+            "current_balance": "100.00",
+        },
+    ).json()
+    transaction = client.post(
+        "/api/transactions",
+        json={
+            "provider": "manual",
+            "account_id": account["id"],
+            "date": "2026-06-18T12:00:00",
+            "description": "Compra preservada",
+            "amount": "-25.00",
+        },
+    ).json()
+
+    assert client.delete(f"/api/accounts/{account['id']}").status_code == 204
+
+    transactions = client.get("/api/transactions").json()
+    assert [item["id"] for item in transactions] == [transaction["id"]]
+    assert transactions[0]["account_id"] is None
+
+
 def test_credit_cards_and_bills_crud(client: TestClient):
     card_response = client.post(
         "/api/credit-cards",
@@ -127,3 +156,78 @@ def test_credit_cards_and_bills_crud(client: TestClient):
     assert client.delete(f"/api/credit-card-bills/{bill['id']}").status_code == 204
     assert client.delete(f"/api/credit-cards/{card['id']}").status_code == 204
     assert client.get("/api/credit-cards").json() == []
+
+
+def test_deleting_credit_card_preserves_transactions_and_removes_bills(client: TestClient):
+    card = client.post(
+        "/api/credit-cards",
+        json={
+            "provider": "manual",
+            "name": "Cartao Principal",
+            "brand": "Visa",
+        },
+    ).json()
+    bill = client.post(
+        f"/api/credit-cards/{card['id']}/bills",
+        json={
+            "reference_month": "2026-06-01",
+            "amount": "125.00",
+            "status": "open",
+        },
+    ).json()
+    transaction = client.post(
+        "/api/transactions",
+        json={
+            "provider": "manual",
+            "credit_card_id": card["id"],
+            "bill_id": bill["id"],
+            "date": "2026-06-18T12:00:00",
+            "description": "Compra no cartao",
+            "amount": "-125.00",
+        },
+    ).json()
+
+    assert client.delete(f"/api/credit-cards/{card['id']}").status_code == 204
+
+    transactions = client.get("/api/transactions").json()
+    assert [item["id"] for item in transactions] == [transaction["id"]]
+    assert transactions[0]["credit_card_id"] is None
+    assert transactions[0]["bill_id"] is None
+    assert client.patch(f"/api/credit-card-bills/{bill['id']}", json={"status": "paid"}).status_code == 404
+
+
+def test_deleting_bill_preserves_associated_transactions(client: TestClient):
+    card = client.post(
+        "/api/credit-cards",
+        json={
+            "provider": "manual",
+            "name": "Cartao Principal",
+            "brand": "Visa",
+        },
+    ).json()
+    bill = client.post(
+        f"/api/credit-cards/{card['id']}/bills",
+        json={
+            "reference_month": "2026-06-01",
+            "amount": "75.00",
+            "status": "open",
+        },
+    ).json()
+    transaction = client.post(
+        "/api/transactions",
+        json={
+            "provider": "manual",
+            "credit_card_id": card["id"],
+            "bill_id": bill["id"],
+            "date": "2026-06-18T12:00:00",
+            "description": "Compra da fatura",
+            "amount": "-75.00",
+        },
+    ).json()
+
+    assert client.delete(f"/api/credit-card-bills/{bill['id']}").status_code == 204
+
+    transactions = client.get("/api/transactions").json()
+    assert [item["id"] for item in transactions] == [transaction["id"]]
+    assert transactions[0]["credit_card_id"] == card["id"]
+    assert transactions[0]["bill_id"] is None

@@ -19,4 +19,4 @@ class Account(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     branch: Mapped[str | None] = mapped_column(String(40))
     account_number_masked: Mapped[str | None] = mapped_column(String(80))
 
-    transactions = relationship("Transaction", back_populates="account", cascade="all, delete-orphan")
+    transactions = relationship("Transaction", back_populates="account")
