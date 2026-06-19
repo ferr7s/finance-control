@@ -10,11 +10,15 @@ O MVP não usa OpenAI API, não executa chamadas para LLM, não faz scraping ban
 - `backend/`: FastAPI, SQLAlchemy 2.x, Pydantic, Alembic, PostgreSQL, importação CSV, serviços financeiros, Agent Gateway e MCP.
 - `postgres`: banco local com contas, cartões, faturas, transações, insights e análises automáticas recebidas de agentes externos.
 
-## Rodar com Docker
+## Início rápido
+
+O fluxo recomendado usa Docker para banco, backend, frontend, migrations e testes. Instale Docker Desktop (Windows/macOS) ou Docker Engine com o plugin Compose (Linux) e GNU Make.
 
 ```bash
-docker compose up --build
+make up
 ```
+
+Sem GNU Make, use `docker compose -p finance-control up --build`.
 
 Depois acesse:
 
@@ -24,34 +28,24 @@ Depois acesse:
 
 O backend roda migrations e seed automaticamente no startup do container.
 
-## Rodar localmente
+## Comandos de desenvolvimento
 
-```bash
-cp .env.example .env
-python -m venv .venv
-.venv/bin/pip install -r backend/requirements.txt
-cd backend
-alembic upgrade head
-python seed.py
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-Em outro terminal:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-## Migrations e seed
-
-```bash
-make migrate
-make seed
-```
+| Comando | Finalidade |
+| --- | --- |
+| `make up` | Constrói e inicia toda a aplicação. |
+| `make down` | Encerra e remove os containers da aplicação. |
+| `make restart` | Reinicia os containers existentes. |
+| `make status` | Exibe o estado dos serviços. |
+| `make logs` | Acompanha os logs dos serviços. |
+| `make migrate` | Executa as migrations no backend. |
+| `make seed` | Carrega os dados iniciais idempotentes. |
+| `make test` | Executa todos os testes do backend, incluindo PostgreSQL. |
+| `make test-integration` | Executa apenas os testes de integração PostgreSQL. |
+| `make frontend-check` | Executa instalação limpa, lint, typecheck e build do frontend em Node 20. |
+| `make check` | Executa os testes do backend e todas as verificações do frontend. |
 
 O seed é idempotente: se encontrar contas já cadastradas, não duplica os dados.
+Os testes PostgreSQL criam um banco temporário com nome único e o removem ao final, sem alterar os dados locais da aplicação.
 
 ## Importação CSV bancária
 
@@ -156,9 +150,8 @@ Principais variáveis:
 - Agentes externos não podem criar, editar ou apagar transações, contas, cartões ou faturas.
 - Agentes externos não podem executar pagamentos, Pix, transferências ou ordens de investimento.
 
-## Próximos passos
+## Planejamento e continuidade
 
-- Endurecer autenticação local do Agent Gateway.
-- Adicionar testes de integração com banco real.
-- Evoluir Pluggy/Open Finance quando houver credenciais.
-- Adicionar edição completa de contas, cartões e faturas no frontend.
+- [Roadmap do produto](docs/ROADMAP.md)
+- [Plano técnico ativo](docs/plans/active-plan.md)
+- [Ponto de retomada entre máquinas e sessões](docs/HANDOFF.md)

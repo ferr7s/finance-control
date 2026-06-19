@@ -1,22 +1,42 @@
-.PHONY: up down migrate seed backend frontend test
+COMPOSE := docker compose -p finance-control
+TEST_DATABASE_ADMIN_URL := postgresql+psycopg://finance_control:finance_control@postgres:5432/postgres
+
+.PHONY: up down restart status logs migrate seed backend frontend test test-integration frontend-check check
 
 up:
-	docker compose up --build
+	$(COMPOSE) up --build
 
 down:
-	docker compose down
+	$(COMPOSE) down
+
+restart:
+	$(COMPOSE) restart
+
+status:
+	$(COMPOSE) ps
+
+logs:
+	$(COMPOSE) logs --follow --tail=200
 
 migrate:
-	cd backend && alembic upgrade head
+	$(COMPOSE) run --build --rm backend alembic upgrade head
 
 seed:
-	cd backend && python seed.py
+	$(COMPOSE) run --build --rm backend python seed.py
 
 backend:
-	cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	$(COMPOSE) up --build backend
 
 frontend:
-	cd frontend && npm run dev
+	$(COMPOSE) up --build frontend
 
 test:
-	PYTHONPATH=backend .venv/bin/python -m pytest -s backend/tests -q
+	$(COMPOSE) run --build --rm -e PYTHONPATH=/app -e TEST_DATABASE_ADMIN_URL=$(TEST_DATABASE_ADMIN_URL) backend pytest -q
+
+test-integration:
+	$(COMPOSE) run --build --rm -e PYTHONPATH=/app -e TEST_DATABASE_ADMIN_URL=$(TEST_DATABASE_ADMIN_URL) backend pytest -q -m integration
+
+frontend-check:
+	docker run --rm -v "$(CURDIR)/frontend:/app" -v /app/node_modules -v /app/.next -w /app node:20-alpine sh -c "npm ci && npm run lint && npm run typecheck && npm run build"
+
+check: test frontend-check
