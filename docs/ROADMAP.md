@@ -7,12 +7,16 @@ Este documento registra a direção do produto. Ele descreve a ordem recomendada
 O MVP já oferece:
 
 - dashboard financeiro com fluxo mensal, patrimônio, categorias, recorrências e faturas;
-- cadastro de contas, cartões e faturas;
-- consulta e categorização de transações;
-- importação CSV com pré-visualização e detecção de duplicidades;
+- cadastro manual de contas bancárias, cartões de crédito e faturas;
+- consulta e categorização de transações (somente leitura — sem importação CSV);
 - insights locais;
 - Agent Gateway REST e servidor MCP;
-- execução local com Docker Compose, PostgreSQL, FastAPI e Next.js.
+- execução local com Docker Compose, PostgreSQL, FastAPI e Next.js;
+- seed de demonstração disponível via `make seed` (não roda automaticamente).
+
+## Fase 1 — Confiabilidade da base ✓ concluída
+
+Objetivo: proteger os dados e tornar cada mudança verificável antes de ampliar as funcionalidades.
 
 ## Fase 1 — Confiabilidade da base
 
@@ -24,15 +28,14 @@ Objetivo: proteger os dados e tornar cada mudança verificável antes de ampliar
 - automatizar testes, lint, typecheck e build no CI;
 - alinhar comandos de desenvolvimento entre Windows, Linux e Docker.
 
-## Fase 2 — Gestão completa de transações
+## Fase 2 — Integrações financeiras (próxima)
 
-Objetivo: permitir que todo o ciclo de manutenção financeira seja concluído pela interface.
+Objetivo: conectar fontes externas para sincronização automática de contas e transações.
 
-- criar, editar e excluir transações manualmente;
-- associar transações a contas, cartões e faturas;
-- adicionar paginação à API e à interface;
-- melhorar revisão e tratamento de duplicidades na importação;
-- criar testes de ponta a ponta para o fluxo de importação até o dashboard.
+- substituir o stub da Pluggy por autenticação real (item/connect token);
+- sincronizar contas, cartões, faturas e transações de forma idempotente;
+- registrar histórico e falhas de sincronização;
+- permitir reconciliação entre dados manuais e dados sincronizados.
 
 ## Fase 3 — Segurança e operação
 
@@ -40,18 +43,8 @@ Objetivo: preparar a aplicação para uso contínuo sem depender de configuraç�
 
 - remover credenciais fixas da interface e dos exemplos executáveis;
 - separar configurações de desenvolvimento e produção;
-- limitar arquivos enviados e validar entradas nas fronteiras da aplicação;
 - implementar exportação, backup e restauração dos dados;
-- adicionar logs operacionais para importações e integrações.
-
-## Fase 4 — Integrações financeiras
-
-Objetivo: conectar fontes externas somente depois que integridade, testes e operação estiverem consolidados.
-
-- substituir o stub da Pluggy por autenticação real;
-- sincronizar contas, cartões, faturas e transações de forma idempotente;
-- registrar histórico e falhas de sincronização;
-- permitir reconciliação entre dados importados manualmente e dados sincronizados.
+- adicionar logs operacionais para sincronizações e integrações.
 
 ## Critério de priorização
 

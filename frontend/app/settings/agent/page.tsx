@@ -36,17 +36,17 @@ export default async function AgentSettingsPage() {
           <CardHeader>
             <CardTitle>Status do Agent Gateway</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm text-slate-300">
+          <CardContent className="space-y-3 text-sm text-white/60">
             <Badge className={`gap-2 ${agentHealth.ok ? "border-accent/30 text-accent" : "border-warning/40 text-warning"}`}>
               <ShieldCheck size={14} />
               {agentHealth.ok ? "Online e read-only" : "API key diferente do exemplo"}
             </Badge>
             {agentHealth.ok ? (
-              <div className="text-xs text-slate-500">
+              <div className="text-xs text-white/30">
                 Status: {agentHealth.health.status} · Read-only: {agentHealth.health.read_only ? "sim" : "não"}
               </div>
             ) : null}
-            <div className="font-mono text-xs text-slate-500">http://localhost:8000</div>
+            <div className="font-mono text-xs text-white/30">http://localhost:8000</div>
           </CardContent>
         </Card>
         <Card>
@@ -54,7 +54,7 @@ export default async function AgentSettingsPage() {
             <CardTitle>Header Authorization</CardTitle>
           </CardHeader>
           <CardContent>
-            <code className="block rounded-md bg-[#0f1620] p-3 text-xs text-slate-300">Authorization: Bearer dev-local-key</code>
+            <code className="block bg-black p-3 text-xs text-white/60">Authorization: Bearer dev-local-key</code>
           </CardContent>
         </Card>
         <Card>
@@ -81,12 +81,12 @@ export default async function AgentSettingsPage() {
           <CardTitle>Configuração MCP</CardTitle>
         </CardHeader>
         <CardContent>
-          <pre className="overflow-auto rounded-md bg-[#0f1620] p-4 text-xs text-slate-300">{JSON.stringify(mcpConfig, null, 2)}</pre>
+          <pre className="overflow-auto bg-black p-4 text-xs text-white/60">{JSON.stringify(mcpConfig, null, 2)}</pre>
         </CardContent>
       </Card>
 
       <Card className="border-accent/30">
-        <CardContent className="py-1 text-sm text-slate-300">
+        <CardContent className="py-1 text-sm text-white/60">
           Endpoints financeiros expostos para agentes são read-only. Apenas análises textuais podem ser salvas em agent_analyses.
         </CardContent>
       </Card>

@@ -10,7 +10,7 @@ export function InsightCard({ insight }: { insight: Insight }) {
         <Badge>{insight.severity}</Badge>
       </CardHeader>
       <CardContent>
-        <p className="text-sm leading-6 text-slate-300">{insight.content}</p>
+        <p className="text-sm leading-6 text-white/60">{insight.content}</p>
       </CardContent>
     </Card>
   );

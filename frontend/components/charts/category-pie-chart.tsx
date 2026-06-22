@@ -6,7 +6,7 @@ import type { CategoryBreakdownItem } from "@/types";
 import { asNumber } from "@/lib/api";
 import { currency } from "@/lib/formatters";
 
-const COLORS = ["#2dd4bf", "#22c55e", "#f59e0b", "#60a5fa", "#ef4444", "#a78bfa", "#f472b6", "#94a3b8"];
+const MONO_SHADES = ["#ffffff", "#cccccc", "#aaaaaa", "#888888", "#666666", "#444444", "#333333", "#222222"];
 
 export function CategoryPieChart({ data }: { data: CategoryBreakdownItem[] }) {
   const chartData = data.map((item) => ({ name: item.category, value: asNumber(item.amount) }));
@@ -14,12 +14,17 @@ export function CategoryPieChart({ data }: { data: CategoryBreakdownItem[] }) {
     <div className="h-72 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
-          <Pie data={chartData} dataKey="value" nameKey="name" innerRadius={58} outerRadius={92} paddingAngle={2}>
+          <Pie data={chartData} dataKey="value" nameKey="name" innerRadius={58} outerRadius={92} paddingAngle={1} strokeWidth={0}>
             {chartData.map((entry, index) => (
-              <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />
+              <Cell key={entry.name} fill={MONO_SHADES[index % MONO_SHADES.length]} />
             ))}
           </Pie>
-          <Tooltip formatter={(value) => currency(Number(value))} contentStyle={{ background: "#0f1620", border: "1px solid #273241" }} />
+          <Tooltip
+            formatter={(value) => currency(Number(value))}
+            contentStyle={{ background: "#0a0a0a", border: "1px solid #222", fontSize: 11 }}
+            labelStyle={{ color: "#fff" }}
+            itemStyle={{ color: "#aaa" }}
+          />
         </PieChart>
       </ResponsiveContainer>
     </div>

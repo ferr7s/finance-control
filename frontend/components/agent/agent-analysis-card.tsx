@@ -11,8 +11,8 @@ export function AgentAnalysisCard({ analysis }: { analysis: AgentAnalysis }) {
         <Badge>{analysis.source}</Badge>
       </CardHeader>
       <CardContent className="space-y-3">
-        <p className="text-sm leading-6 text-slate-300">{analysis.content}</p>
-        {metadata ? <pre className="overflow-auto rounded-md bg-[#0f1620] p-3 text-xs text-slate-400">{JSON.stringify(metadata, null, 2)}</pre> : null}
+        <p className="text-sm leading-6 text-white/60">{analysis.content}</p>
+        {metadata ? <pre className="overflow-auto bg-black p-3 text-xs text-white/40">{JSON.stringify(metadata, null, 2)}</pre> : null}
       </CardContent>
     </Card>
   );

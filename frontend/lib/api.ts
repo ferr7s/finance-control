@@ -4,9 +4,8 @@ import type {
   AgentAnalysis,
   AgentTool,
   CategoryBreakdownItem,
-  CsvImportPreview,
-  CsvImportResult,
   CreditCard,
+  SyncStatus,
   CreditCardBill,
   CreditCardSummary,
   DashboardSummary,
@@ -87,9 +86,9 @@ export const api = {
   generateInsights: () => apiFetch<Insight[]>("/api/insights/generate", { method: "POST", body: "{}" }),
   analyses: () => apiFetch<AgentAnalysis[]>("/api/agent-analyses"),
   agentHealth: () => apiFetch<AgentHealth>("/api/agent/health", { headers: { Authorization: "Bearer dev-local-key" } }),
-  importCsvPreview: (formData: FormData) =>
-    apiFetch<CsvImportPreview>("/api/import/bank-csv/preview", { method: "POST", body: formData }),
-  importCsv: (formData: FormData) => apiFetch<CsvImportResult>("/api/import/bank-csv", { method: "POST", body: formData }),
+  triggerSync: () => apiFetch<SyncStatus[]>("/api/sync", { method: "POST", body: "{}" }),
+  triggerSyncBank: (bank: string) => apiFetch<SyncStatus[]>(`/api/sync/${bank}`, { method: "POST", body: "{}" }),
+  syncStatus: () => apiFetch<SyncStatus[]>("/api/sync/status"),
   manifest: () => apiFetch<{ tools: AgentTool[] }>("/agent_tools_manifest.json")
 };
 

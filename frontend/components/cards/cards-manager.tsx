@@ -105,32 +105,32 @@ function CardForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-3 rounded-md border border-border bg-[#0f1620]/70 p-3 md:grid-cols-4">
-      <label className="space-y-1 text-xs text-slate-400">
+    <form onSubmit={handleSubmit} className="grid gap-3 border border-border bg-black/70 p-3 md:grid-cols-4">
+      <label className="space-y-1 text-xs text-white/40">
         Nome
         <Input name="name" required defaultValue={defaults.name} placeholder="Cartão principal" />
       </label>
-      <label className="space-y-1 text-xs text-slate-400">
+      <label className="space-y-1 text-xs text-white/40">
         Provedor
         <Input name="provider" required defaultValue={defaults.provider} placeholder="manual" />
       </label>
-      <label className="space-y-1 text-xs text-slate-400">
+      <label className="space-y-1 text-xs text-white/40">
         Bandeira
         <Input name="brand" defaultValue={defaults.brand || ""} placeholder="Visa" />
       </label>
-      <label className="space-y-1 text-xs text-slate-400">
+      <label className="space-y-1 text-xs text-white/40">
         Limite total
         <Input name="limit_total" type="number" step="0.01" defaultValue={defaults.limit_total || ""} />
       </label>
-      <label className="space-y-1 text-xs text-slate-400">
+      <label className="space-y-1 text-xs text-white/40">
         Limite disponível
         <Input name="limit_available" type="number" step="0.01" defaultValue={defaults.limit_available || ""} />
       </label>
-      <label className="space-y-1 text-xs text-slate-400">
+      <label className="space-y-1 text-xs text-white/40">
         Fechamento
         <Input name="closing_day" type="number" min={1} max={31} defaultValue={defaults.closing_day || ""} />
       </label>
-      <label className="space-y-1 text-xs text-slate-400">
+      <label className="space-y-1 text-xs text-white/40">
         Vencimento
         <Input name="due_day" type="number" min={1} max={31} defaultValue={defaults.due_day || ""} />
       </label>
@@ -139,7 +139,7 @@ function CardForm({
           {submitLabel}
         </Button>
         {onCancel ? (
-          <Button className="bg-transparent text-slate-200 hover:bg-slate-800" disabled={busy} type="button" onClick={onCancel}>
+          <Button className="bg-transparent text-white/80 hover:bg-white/10" disabled={busy} type="button" onClick={onCancel}>
             <X size={16} />
             Cancelar
           </Button>
@@ -171,29 +171,29 @@ function BillForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-3 rounded-md border border-border bg-[#0f1620]/70 p-3 md:grid-cols-5">
-      <label className="space-y-1 text-xs text-slate-400">
+    <form onSubmit={handleSubmit} className="grid gap-3 border border-border bg-black/70 p-3 md:grid-cols-5">
+      <label className="space-y-1 text-xs text-white/40">
         Referência
         <Input name="reference_month" required type="month" defaultValue={defaults.reference_month.slice(0, 7)} />
       </label>
-      <label className="space-y-1 text-xs text-slate-400">
+      <label className="space-y-1 text-xs text-white/40">
         Vencimento
         <Input name="due_date" type="date" defaultValue={defaults.due_date || ""} />
       </label>
-      <label className="space-y-1 text-xs text-slate-400">
+      <label className="space-y-1 text-xs text-white/40">
         Fechamento
         <Input name="closing_date" type="date" defaultValue={defaults.closing_date || ""} />
       </label>
-      <label className="space-y-1 text-xs text-slate-400">
+      <label className="space-y-1 text-xs text-white/40">
         Valor
         <Input name="amount" required type="number" step="0.01" defaultValue={defaults.amount} />
       </label>
-      <label className="space-y-1 text-xs text-slate-400">
+      <label className="space-y-1 text-xs text-white/40">
         Status
         <select
           name="status"
           defaultValue={defaults.status}
-          className="h-9 w-full rounded-md border border-border bg-[#0f1620] px-3 text-sm text-slate-100 outline-none transition focus:border-accent"
+          className="h-9 w-full border border-border bg-black px-3 text-sm text-white outline-none transition focus:border-white/40"
         >
           <option value="open">Aberta</option>
           <option value="closed">Fechada</option>
@@ -206,7 +206,7 @@ function BillForm({
           {submitLabel}
         </Button>
         {onCancel ? (
-          <Button className="bg-transparent text-slate-200 hover:bg-slate-800" disabled={busy} type="button" onClick={onCancel}>
+          <Button className="bg-transparent text-white/80 hover:bg-white/10" disabled={busy} type="button" onClick={onCancel}>
             <X size={16} />
             Cancelar
           </Button>
@@ -318,7 +318,7 @@ export function CardsManager({
 
   return (
     <div className="space-y-4">
-      {error ? <div className="rounded-md border border-danger/40 bg-danger/10 p-3 text-sm text-danger">{error}</div> : null}
+      {error ? <div className="border border-danger/40 bg-danger/10 p-3 text-sm text-danger">{error}</div> : null}
       <Card>
         <CardHeader>
           <CardTitle>Novo cartão</CardTitle>
@@ -338,10 +338,10 @@ export function CardsManager({
               <CardHeader>
                 <div>
                   <CardTitle>{card.name}</CardTitle>
-                  <div className="mt-1 text-xs text-slate-500">{card.provider}{card.brand ? ` · ${card.brand}` : ""}</div>
+                  <div className="mt-1 text-xs text-white/30">{card.provider}{card.brand ? ` · ${card.brand}` : ""}</div>
                 </div>
                 <div className="flex gap-2">
-                  <Button className="size-8 bg-transparent px-0 text-slate-200 hover:bg-slate-800" title="Editar cartão" onClick={() => setEditingCardId(card.id)}>
+                  <Button className="size-8 bg-transparent px-0 text-white/80 hover:bg-white/10" title="Editar cartão" onClick={() => setEditingCardId(card.id)}>
                     <Pencil size={15} />
                   </Button>
                   <Button className="size-8 bg-transparent px-0 text-danger hover:bg-danger/10" disabled={busy === card.id} title="Excluir cartão" onClick={() => deleteCard(card)}>
@@ -362,19 +362,19 @@ export function CardsManager({
 
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <div className="text-slate-500">Limite total</div>
+                    <div className="text-white/30">Limite total</div>
                     <div className="font-semibold">{currency(card.limit_total)}</div>
                   </div>
                   <div>
-                    <div className="text-slate-500">Limite disponível</div>
+                    <div className="text-white/30">Limite disponível</div>
                     <div className="font-semibold">{currency(card.limit_available)}</div>
                   </div>
                   <div>
-                    <div className="text-slate-500">Fatura atual</div>
+                    <div className="text-white/30">Fatura atual</div>
                     <div className="font-semibold text-warning">{currency(summary?.open_bill_amount)}</div>
                   </div>
                   <div>
-                    <div className="text-slate-500">Fechamento / vencimento</div>
+                    <div className="text-white/30">Fechamento / vencimento</div>
                     <div className="font-semibold">
                       {card.closing_day ?? "-"} / {card.due_day ?? "-"}
                     </div>
@@ -383,8 +383,8 @@ export function CardsManager({
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-3">
-                    <div className="text-xs font-medium uppercase text-slate-500">Faturas</div>
-                    <Button className="h-8 bg-transparent text-slate-200 hover:bg-slate-800" onClick={() => setAddingBillFor(card.id)}>
+                    <div className="text-xs font-medium uppercase text-white/30">Faturas</div>
+                    <Button className="h-8 bg-transparent text-white/80 hover:bg-white/10" onClick={() => setAddingBillFor(card.id)}>
                       <Plus size={15} />
                       Fatura
                     </Button>
@@ -398,7 +398,7 @@ export function CardsManager({
                     />
                   ) : null}
                   {bills.slice(0, 4).map((bill) => (
-                    <div key={bill.id} className="rounded-md border border-border p-3 text-sm">
+                    <div key={bill.id} className="border border-border p-3 text-sm">
                       {editingBillId === bill.id ? (
                         <BillForm
                           bill={bill}
@@ -411,7 +411,7 @@ export function CardsManager({
                         <div className="grid grid-cols-[1fr_auto] gap-3">
                           <div>
                             <div className="font-medium">{referenceMonth(bill.reference_month)}</div>
-                            <div className="text-xs text-slate-500">
+                            <div className="text-xs text-white/30">
                               Venc. {bill.due_date ? shortDate(bill.due_date) : "-"} · Fech. {bill.closing_date ? shortDate(bill.closing_date) : "-"}
                             </div>
                           </div>
@@ -421,7 +421,7 @@ export function CardsManager({
                               <Badge>{bill.status}</Badge>
                             </div>
                             <div className="flex gap-2">
-                              <Button className="size-8 bg-transparent px-0 text-slate-200 hover:bg-slate-800" title="Editar fatura" onClick={() => setEditingBillId(bill.id)}>
+                              <Button className="size-8 bg-transparent px-0 text-white/80 hover:bg-white/10" title="Editar fatura" onClick={() => setEditingBillId(bill.id)}>
                                 <Pencil size={15} />
                               </Button>
                               <Button className="size-8 bg-transparent px-0 text-danger hover:bg-danger/10" disabled={busy === bill.id} title="Excluir fatura" onClick={() => deleteBill(bill)}>
@@ -433,28 +433,28 @@ export function CardsManager({
                       )}
                     </div>
                   ))}
-                  {bills.length === 0 ? <div className="rounded-md border border-border p-3 text-sm text-slate-500">Sem faturas cadastradas.</div> : null}
+                  {bills.length === 0 ? <div className="border border-border p-3 text-sm text-white/30">Sem faturas cadastradas.</div> : null}
                 </div>
 
                 <div className="space-y-2">
-                  <div className="text-xs font-medium uppercase text-slate-500">Transações associadas</div>
+                  <div className="text-xs font-medium uppercase text-white/30">Transações associadas</div>
                   {cardTransactions.map((transaction) => (
-                    <div key={transaction.id} className="flex items-center justify-between gap-3 rounded-md border border-border p-3 text-sm">
+                    <div key={transaction.id} className="flex items-center justify-between gap-3 border border-border p-3 text-sm">
                       <div>
                         <div className="font-medium">{transaction.description}</div>
-                        <div className="text-xs text-slate-500">{shortDate(transaction.date)}</div>
+                        <div className="text-xs text-white/30">{shortDate(transaction.date)}</div>
                       </div>
                       <div className="font-semibold text-danger">{currency(transaction.amount)}</div>
                     </div>
                   ))}
-                  {cardTransactions.length === 0 ? <div className="rounded-md border border-border p-3 text-sm text-slate-500">Sem transações associadas a este cartão.</div> : null}
+                  {cardTransactions.length === 0 ? <div className="border border-border p-3 text-sm text-white/30">Sem transações associadas a este cartão.</div> : null}
                 </div>
               </CardContent>
             </Card>
           );
         })}
       </div>
-      {cards.length === 0 ? <div className="rounded-md border border-border p-4 text-sm text-slate-500">Nenhum cartão cadastrado.</div> : null}
+      {cards.length === 0 ? <div className="border border-border p-4 text-sm text-white/30">Nenhum cartão cadastrado.</div> : null}
     </div>
   );
 }

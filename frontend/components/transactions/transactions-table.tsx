@@ -83,10 +83,10 @@ export function TransactionsTable({ initialTransactions }: { initialTransactions
         onApply={applyFilters}
         onReset={resetFilters}
       />
-      {error ? <div className="rounded-md border border-danger/40 bg-danger/10 p-3 text-sm text-danger">{error}</div> : null}
-      <div className="overflow-x-auto rounded-lg border border-border">
+      {error ? <div className="border border-danger/40 bg-danger/10 p-3 text-sm text-danger">{error}</div> : null}
+      <div className="overflow-x-auto border border-border">
         <table className="min-w-full divide-y divide-border text-sm">
-          <thead className="bg-[#111923] text-left text-xs uppercase text-slate-500">
+          <thead className="bg-[#111923] text-left text-xs uppercase text-white/30">
             <tr>
               <th className="px-3 py-3">Data</th>
               <th className="px-3 py-3">Descrição</th>
@@ -101,14 +101,14 @@ export function TransactionsTable({ initialTransactions }: { initialTransactions
           <tbody className="divide-y divide-border">
             {transactions.map((tx) => (
               <tr key={tx.id} className="bg-muted/35">
-                <td className="whitespace-nowrap px-3 py-3 text-slate-400">{shortDate(tx.date)}</td>
+                <td className="whitespace-nowrap px-3 py-3 text-white/40">{shortDate(tx.date)}</td>
                 <td className="min-w-56 px-3 py-3">{tx.description}</td>
                 <td className={`whitespace-nowrap px-3 py-3 font-medium ${Number(tx.amount) >= 0 ? "text-success" : "text-danger"}`}>
                   {currency(tx.amount)}
                 </td>
                 <td className="px-3 py-3">
                   <select
-                    className="h-8 rounded-md border border-border bg-[#0f1620] px-2 text-xs"
+                    className="h-8 border border-border bg-black px-2 text-xs"
                     defaultValue={tx.category || "outros"}
                     onChange={(event) => updateCategory(tx, event.target.value)}
                   >
@@ -119,9 +119,9 @@ export function TransactionsTable({ initialTransactions }: { initialTransactions
                     ))}
                   </select>
                 </td>
-                <td className="px-3 py-3 text-slate-400">{accountOrCardLabel(tx)}</td>
-                <td className="px-3 py-3 text-slate-400">{tx.provider}</td>
-                <td className="px-3 py-3 text-slate-400">{tx.type}</td>
+                <td className="px-3 py-3 text-white/40">{accountOrCardLabel(tx)}</td>
+                <td className="px-3 py-3 text-white/40">{tx.provider}</td>
+                <td className="px-3 py-3 text-white/40">{tx.type}</td>
                 <td className="px-3 py-3">
                   <Button className="size-8 px-0" disabled={saving === tx.id} title="Categoria salva ao alterar">
                     <Save size={14} />
@@ -131,7 +131,7 @@ export function TransactionsTable({ initialTransactions }: { initialTransactions
             ))}
             {transactions.length === 0 ? (
               <tr className="bg-muted/35">
-                <td className="px-3 py-6 text-center text-slate-500" colSpan={8}>
+                <td className="px-3 py-6 text-center text-white/30" colSpan={8}>
                   Nenhuma transação encontrada para os filtros aplicados.
                 </td>
               </tr>

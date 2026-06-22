@@ -6,14 +6,17 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#0b0f14",
-        foreground: "#eef2f7",
-        muted: "#151b23",
-        border: "#273241",
-        accent: "#2dd4bf",
-        warning: "#f59e0b",
-        danger: "#ef4444",
-        success: "#22c55e"
+        background: "#0a0a0a",
+        foreground: "#ffffff",
+        muted: "#111111",
+        border: "#1e1e1e",
+        accent: "#ffffff",
+        warning: "#d4a017",
+        danger: "#c0392b",
+        success: "#27ae60"
+      },
+      fontFamily: {
+        mono: ["JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", "monospace"]
       }
     }
   },

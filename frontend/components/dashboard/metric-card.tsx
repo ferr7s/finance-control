@@ -15,18 +15,19 @@ export function MetricCard({
   tone?: "default" | "success" | "danger" | "warning";
 }) {
   const toneClass = {
-    default: "text-slate-100",
-    success: "text-success",
-    danger: "text-danger",
-    warning: "text-warning"
+    default: "text-white",
+    success: "text-white",
+    danger: "text-white/60",
+    warning: "text-white/80"
   }[tone];
+
   return (
     <Card className="min-h-28">
-      <div className="flex items-center justify-between gap-3 text-sm text-slate-400">
+      <div className="flex items-center justify-between gap-3 text-[10px] uppercase tracking-widest text-white/30">
         <span>{title}</span>
-        {icon}
+        <span className="text-white/20">{icon}</span>
       </div>
-      <div className={`mt-4 text-2xl font-semibold ${toneClass}`}>{currency(value)}</div>
+      <div className={`mt-4 font-mono text-2xl font-semibold tracking-tight ${toneClass}`}>{currency(value)}</div>
     </Card>
   );
 }

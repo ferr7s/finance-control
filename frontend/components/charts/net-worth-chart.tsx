@@ -16,11 +16,16 @@ export function NetWorthChart({ data, startingBalance }: { data: MonthlyCashflow
     <div className="h-72 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData}>
-          <CartesianGrid stroke="#243244" vertical={false} />
-          <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} />
-          <YAxis stroke="#94a3b8" fontSize={12} tickFormatter={(value) => `R$${Math.round(Number(value) / 1000)}k`} />
-          <Tooltip formatter={(value) => currency(Number(value))} contentStyle={{ background: "#0f1620", border: "1px solid #273241" }} />
-          <Line dataKey="patrimonio" stroke="#2dd4bf" strokeWidth={2} dot={{ r: 3 }} />
+          <CartesianGrid stroke="#1e1e1e" vertical={false} strokeDasharray="4 4" />
+          <XAxis dataKey="month" stroke="#333" fontSize={10} tick={{ fill: "#555" }} tickLine={false} axisLine={false} />
+          <YAxis stroke="#333" fontSize={10} tick={{ fill: "#555" }} tickLine={false} axisLine={false} tickFormatter={(v) => `R$${Math.round(Number(v) / 1000)}k`} />
+          <Tooltip
+            formatter={(value) => currency(Number(value))}
+            contentStyle={{ background: "#0a0a0a", border: "1px solid #222", fontSize: 11 }}
+            labelStyle={{ color: "#fff" }}
+            itemStyle={{ color: "#aaa" }}
+          />
+          <Line dataKey="patrimonio" stroke="#ffffff" strokeWidth={1.5} dot={{ r: 2, fill: "#ffffff", strokeWidth: 0 }} />
         </LineChart>
       </ResponsiveContainer>
     </div>

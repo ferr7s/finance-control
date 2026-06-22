@@ -20,17 +20,18 @@ const items = [
 export function Sidebar() {
   const pathname = usePathname();
   return (
-    <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-border bg-[#0d131b] p-4 lg:block">
-      <Link href="/dashboard" className="mb-8 flex items-center gap-3">
-        <div className="flex size-9 items-center justify-center rounded-md bg-accent text-slate-950">
-          <BarChart3 size={20} />
+    <aside className="fixed inset-y-0 left-0 hidden w-56 border-r border-border bg-background lg:flex lg:flex-col">
+      <Link href="/dashboard" className="flex items-center gap-3 border-b border-border px-5 py-5">
+        <div className="flex size-7 shrink-0 items-center justify-center border border-white">
+          <BarChart3 size={14} className="text-white" />
         </div>
         <div>
-          <div className="text-sm font-semibold">Finance Control</div>
-          <div className="text-xs text-slate-500">Local-first</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-white">Finance</div>
+          <div className="text-[10px] tracking-widest text-white/30">CONTROL</div>
         </div>
       </Link>
-      <nav className="space-y-1">
+
+      <nav className="flex-1 px-3 py-4">
         {items.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href;
@@ -39,16 +40,21 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex h-10 items-center gap-3 rounded-md px-3 text-sm text-slate-400 transition hover:bg-slate-800 hover:text-slate-100",
-                active && "bg-slate-800 text-slate-50"
+                "flex h-9 items-center gap-3 px-2 text-xs tracking-wide text-white/40 transition hover:text-white",
+                active && "text-white"
               )}
             >
-              <Icon size={18} />
+              <Icon size={14} className={cn("shrink-0", active ? "text-white" : "text-white/30")} />
               <span>{item.label}</span>
+              {active && <span className="ml-auto h-1 w-1 rounded-full bg-white" />}
             </Link>
           );
         })}
       </nav>
+
+      <div className="border-t border-border px-3 py-4 text-[10px] uppercase tracking-widest text-white/20">
+        <div className="px-2 py-1">Local-first</div>
+      </div>
     </aside>
   );
 }

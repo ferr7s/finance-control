@@ -10,15 +10,15 @@ export function CreditCardSummaryCard({ cards }: { cards: CreditCardSummary[] })
       </CardHeader>
       <CardContent className="space-y-3">
         {cards.map((card) => (
-          <div key={card.id} className="rounded-md border border-border p-3">
+          <div key={card.id} className="border border-border p-3">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <div className="text-sm font-medium">{card.name}</div>
-                <div className="text-xs text-slate-500">{card.provider}</div>
+                <div className="text-xs text-white/30">{card.provider}</div>
               </div>
               <div className="text-right text-sm font-semibold">{currency(card.open_bill_amount)}</div>
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-400">
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-white/40">
               <span>Fecha dia {card.closing_day ?? "-"}</span>
               <span>Vence dia {card.due_day ?? "-"}</span>
             </div>

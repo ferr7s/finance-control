@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import accounts, agent, agent_analyses, credit_cards, dashboard, health, import_routes, insights, transactions
+from app.api.routes import accounts, agent, agent_analyses, credit_cards, dashboard, health, insights, sync, transactions
 from app.core.config import get_settings
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
@@ -31,8 +31,8 @@ app.include_router(accounts.router)
 app.include_router(credit_cards.router)
 app.include_router(transactions.router)
 app.include_router(dashboard.router)
-app.include_router(import_routes.router)
 app.include_router(insights.router)
+app.include_router(sync.router)
 app.include_router(agent_analyses.router)
 app.include_router(agent.router)
 

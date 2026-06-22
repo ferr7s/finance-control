@@ -43,7 +43,7 @@ export function TransactionFilters({
       }}
     >
       <div className="relative">
-        <Search className="absolute left-3 top-2.5 text-slate-500" size={16} />
+        <Search className="absolute left-3 top-2.5 text-white/30" size={16} />
         <Input
           className="pl-9"
           placeholder="Descrição ou estabelecimento"
@@ -54,7 +54,7 @@ export function TransactionFilters({
       <Input type="date" value={filters.start_date || ""} onChange={(event) => onChange(updateFilter(filters, "start_date", event.target.value))} />
       <Input type="date" value={filters.end_date || ""} onChange={(event) => onChange(updateFilter(filters, "end_date", event.target.value))} />
       <select
-        className="h-9 rounded-md border border-border bg-[#0f1620] px-3 text-sm text-slate-100 outline-none transition focus:border-accent"
+        className="h-9 border border-border bg-black px-3 text-sm text-white outline-none transition focus:border-white/40"
         value={filters.category || ""}
         onChange={(event) => onChange(updateFilter(filters, "category", event.target.value))}
       >
@@ -66,7 +66,7 @@ export function TransactionFilters({
         ))}
       </select>
       <select
-        className="h-9 rounded-md border border-border bg-[#0f1620] px-3 text-sm text-slate-100 outline-none transition focus:border-accent"
+        className="h-9 border border-border bg-black px-3 text-sm text-white outline-none transition focus:border-white/40"
         value={filters.provider || ""}
         onChange={(event) => onChange(updateFilter(filters, "provider", event.target.value))}
       >
@@ -78,7 +78,7 @@ export function TransactionFilters({
         ))}
       </select>
       <select
-        className="h-9 rounded-md border border-border bg-[#0f1620] px-3 text-sm text-slate-100 outline-none transition focus:border-accent"
+        className="h-9 border border-border bg-black px-3 text-sm text-white outline-none transition focus:border-white/40"
         value={filters.type || ""}
         onChange={(event) => onChange(updateFilter(filters, "type", event.target.value))}
       >
@@ -93,7 +93,7 @@ export function TransactionFilters({
         <Search size={16} />
         Filtrar
       </Button>
-      <Button type="button" className="bg-transparent text-slate-100 hover:bg-slate-800" disabled={loading} onClick={onReset}>
+      <Button type="button" className="bg-transparent text-white hover:bg-white/10" disabled={loading} onClick={onReset}>
         <RotateCcw size={16} />
         Limpar
       </Button>

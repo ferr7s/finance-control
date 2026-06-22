@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     pluggy_client_secret: str = ""
     pluggy_base_url: str = "https://api.pluggy.ai"
 
+    sync_server_url: str = "http://host.docker.internal:8001"
+
     @property
     def cors_origins(self) -> list[str]:
         return [origin.strip() for origin in self.backend_cors_origins.split(",") if origin.strip()]
