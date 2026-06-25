@@ -11,7 +11,7 @@ from app.utils.money import parse_money
 
 COLUMN_ALIASES = {
     "date": {"date", "data"},
-    "description": {"description", "descricao", "descrição", "historico", "histórico"},
+    "description": {"description", "descricao", "descrição", "historico", "histórico", "movimentacao", "movimentação"},
     "amount": {"amount", "valor"},
     "type": {"type", "tipo"},
     "category": {"category", "categoria"},

@@ -117,7 +117,7 @@ def import_bank_ofx(db: Session, content: bytes) -> dict[str, int | list[str]]:
     return {"total_rows": len(rows), "imported": imported, "ignored": ignored, "errors": errors}
 
 
-def import_bank_csv(db: Session, content: bytes) -> dict[str, int | list[str]]:
+def import_bank_csv(db: Session, content: bytes, force_provider: str | None = None) -> dict[str, int | list[str]]:
     rows = _parse_csv_content(content)
     imported = 0
     ignored = 0
@@ -125,9 +125,10 @@ def import_bank_csv(db: Session, content: bytes) -> dict[str, int | list[str]]:
 
     for index, row in enumerate(rows, start=1):
         try:
+            provider = force_provider or str(row["provider"])
             payload = TransactionCreate(
                 external_id=str(row["external_id"]),
-                provider=str(row["provider"]),
+                provider=provider,
                 date=row["date"],
                 description=str(row["description"]),
                 amount=row["amount"],

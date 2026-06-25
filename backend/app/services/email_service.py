@@ -350,7 +350,7 @@ def run_email_sync(db: Session) -> dict:
                     if not csv_bytes:
                         logger.info("Flash statement email has no CSV attachment, skipping")
                         continue
-                    result = import_bank_csv(db, csv_bytes)
+                    result = import_bank_csv(db, csv_bytes, force_provider="flash")
                     imported += result.get("imported", 0)
                     ignored += result.get("ignored", 0)
                     errors.extend(result.get("errors", []))
