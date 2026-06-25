@@ -35,7 +35,6 @@ logger = logging.getLogger(__name__)
 BANK_SENDERS = [
     ("nubank", "noreply@nubank.com.br"),
     ("itau", "itaucard@itau.com.br"),
-    ("flash", "noreply@flashapp.com.br"),
 ]
 
 # Nubank monthly statement email (contains CSV attachment)
