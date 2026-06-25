@@ -172,17 +172,21 @@ def connect_imap() -> imaplib.IMAP4_SSL:
     return imap
 
 
-def _fetch_unseen_from_sender(imap: imaplib.IMAP4_SSL, sender: str) -> list[tuple[bytes, Message]]:
-    """Return list of (uid, Message) for unseen emails from `sender`."""
+def _fetch_recent_from_sender(imap: imaplib.IMAP4_SSL, sender: str, days: int = 30) -> list[tuple[bytes, Message]]:
+    """Return (uid, Message) for emails from `sender` in the last `days` days.
+
+    Does NOT filter by read/unread — deduplication via Message-ID prevents
+    re-importing emails the user already opened before the sync ran.
+    """
     imap.select("INBOX")
-    _, data = imap.uid("search", None, f'(UNSEEN FROM "{sender}")')
+    since = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%d-%b-%Y")
+    _, data = imap.uid("search", None, f'(FROM "{sender}" SINCE {since})')
     uids = data[0].split() if data and data[0] else []
     result = []
     for uid in uids:
         _, msg_data = imap.uid("fetch", uid, "(RFC822)")
         if msg_data and msg_data[0]:
-            raw = msg_data[0][1]
-            result.append((uid, message_from_bytes(raw)))
+            result.append((uid, message_from_bytes(msg_data[0][1])))
     return result
 
 
@@ -249,8 +253,8 @@ def run_email_sync(db: Session) -> dict:
         for provider, sender in BANK_SENDERS:
             parser = PARSERS[provider]
             try:
-                emails = _fetch_unseen_from_sender(imap, sender)
-                logger.info("Found %d unseen emails from %s (%s)", len(emails), provider, sender)
+                emails = _fetch_recent_from_sender(imap, sender)
+                logger.info("Found %d recent emails from %s (%s)", len(emails), provider, sender)
             except Exception as exc:
                 errors.append(f"IMAP fetch error for {provider}: {exc}")
                 continue
@@ -260,13 +264,11 @@ def run_email_sync(db: Session) -> dict:
                     parsed = parser(msg)
                     if not parsed:
                         ignored += 1
-                        _mark_seen(imap, uid)
                         continue
 
                     external_id = _make_external_id(provider, msg)
                     if find_duplicate(db, provider, external_id):
                         ignored += 1
-                        _mark_seen(imap, uid)
                         continue
 
                     payload = TransactionCreate(
@@ -278,7 +280,6 @@ def run_email_sync(db: Session) -> dict:
                         payment_method="email",
                     )
                     create_transaction(db, payload)
-                    _mark_seen(imap, uid)
                     imported += 1
 
                 except Exception as exc:
@@ -294,13 +295,11 @@ def run_email_sync(db: Session) -> dict:
                     csv_bytes = _get_csv_attachment(msg)
                     if not csv_bytes:
                         logger.warning("Nubank statement email has no CSV attachment")
-                        _mark_seen(imap, uid)
                         continue
                     result = import_bank_csv(db, csv_bytes)
                     imported += result.get("imported", 0)
                     ignored += result.get("ignored", 0)
                     errors.extend(result.get("errors", []))
-                    _mark_seen(imap, uid)
                     logger.info(
                         "Nubank statement imported: %d new, %d ignored",
                         result.get("imported", 0),
