@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, File, UploadFile
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.services.import_service import import_bank_csv, preview_bank_csv
+from app.services.import_service import import_bank_csv, import_bank_ofx, preview_bank_csv, preview_bank_ofx
 
 router = APIRouter(prefix="/api/import", tags=["import"])
 
@@ -17,3 +17,15 @@ async def preview_csv(file: UploadFile = File(...), db: Session = Depends(get_db
 async def import_csv(file: UploadFile = File(...), db: Session = Depends(get_db)):
     content = await file.read()
     return import_bank_csv(db, content)
+
+
+@router.post("/bank-ofx/preview")
+async def preview_ofx(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    content = await file.read()
+    return preview_bank_ofx(db, content)
+
+
+@router.post("/bank-ofx")
+async def import_ofx(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    content = await file.read()
+    return import_bank_ofx(db, content)

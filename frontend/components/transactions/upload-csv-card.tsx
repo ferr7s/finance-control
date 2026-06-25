@@ -19,6 +19,10 @@ export function UploadCsvCard() {
   const [result, setResult] = useState<{ imported: number; ignored: number; errors: string[] } | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  function isOfx(f: File) {
+    return f.name.toLowerCase().endsWith(".ofx");
+  }
+
   async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const selected = event.target.files?.[0];
     if (!selected) return;
@@ -26,7 +30,7 @@ export function UploadCsvCard() {
     setPhase("previewing");
     setErrorMsg(null);
     try {
-      const data = await api.importCsvPreview(selected);
+      const data = isOfx(selected) ? await api.importOfxPreview(selected) : await api.importCsvPreview(selected);
       setPreview(data);
     } catch (err) {
       setPhase("error");
@@ -38,7 +42,7 @@ export function UploadCsvCard() {
     if (!file) return;
     setPhase("importing");
     try {
-      const data = await api.importCsv(file);
+      const data = isOfx(file) ? await api.importOfx(file) : await api.importCsv(file);
       setResult(data);
       setPhase("done");
     } catch (err) {
@@ -59,15 +63,15 @@ export function UploadCsvCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Importar CSV</CardTitle>
+        <CardTitle>Importar CSV / OFX</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {phase === "idle" && (
           <>
             <p className="text-xs text-white/40">
-              Importe transações a partir de um arquivo CSV exportado do seu banco. Duplicatas são detectadas automaticamente.
+              Importe transações a partir de um arquivo CSV ou OFX exportado do seu banco. Duplicatas são detectadas automaticamente.
             </p>
-            <input ref={inputRef} type="file" accept=".csv" className="hidden" onChange={handleFileChange} />
+            <input ref={inputRef} type="file" accept=".csv,.ofx" className="hidden" onChange={handleFileChange} />
             <Button onClick={() => inputRef.current?.click()}>
               <Upload size={14} className="mr-2" />
               Selecionar arquivo

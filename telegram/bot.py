@@ -396,19 +396,27 @@ async def cmd_sync(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     doc = update.message.document
-    if not doc.file_name.lower().endswith(".csv"):
-        await update.message.reply_text("Por favor, envie um arquivo .csv para importar transações.")
+    fname = doc.file_name.lower()
+    is_csv = fname.endswith(".csv")
+    is_ofx = fname.endswith(".ofx")
+
+    if not is_csv and not is_ofx:
+        await update.message.reply_text("Por favor, envie um arquivo .csv ou .ofx para importar transações.")
         return
 
-    await update.message.reply_text("📥 Recebendo arquivo CSV...")
+    fmt = "OFX" if is_ofx else "CSV"
+    await update.message.reply_text(f"📥 Recebendo arquivo {fmt}...")
     try:
         file = await context.bot.get_file(doc.file_id)
         file_bytes = await file.download_as_bytearray()
 
+        endpoint = "/api/import/bank-ofx" if is_ofx else "/api/import/bank-csv"
+        mime = "application/octet-stream" if is_ofx else "text/csv"
+
         with httpx.Client(base_url=API_URL, timeout=60) as client:
             resp = client.post(
-                "/api/import/bank-csv",
-                files={"file": (doc.file_name, bytes(file_bytes), "text/csv")},
+                endpoint,
+                files={"file": (doc.file_name, bytes(file_bytes), mime)},
             )
             resp.raise_for_status()
             result = resp.json()
@@ -416,13 +424,13 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         imported = result.get("imported", 0)
         ignored = result.get("ignored", 0)
         errors = result.get("errors", [])
-        msg = f"✅ CSV importado!\n• Novas transações: {imported}\n• Ignoradas (duplicatas): {ignored}"
+        msg = f"✅ {fmt} importado!\n• Novas transações: {imported}\n• Ignoradas (duplicatas): {ignored}"
         if errors:
             msg += f"\n⚠️ Erros em {len(errors)} linhas"
         await update.message.reply_text(msg)
 
     except Exception as exc:
-        await update.message.reply_text(f"Erro ao importar CSV: {exc}")
+        await update.message.reply_text(f"Erro ao importar {fmt}: {exc}")
 
 
 # ---------------------------------------------------------------------------

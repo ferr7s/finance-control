@@ -19,7 +19,7 @@ services:
     build:
       context: ./backend
     env_file:
-      - .env.example
+      - .env
     environment:
       DATABASE_URL: postgresql+psycopg://finance_control:finance_control@postgres:5432/finance_control
     ports:
@@ -43,7 +43,7 @@ services:
     build:
       context: ./telegram
     env_file:
-      - .env.example
+      - .env
     environment:
       FINANCE_CONTROL_API_URL: http://backend:8000
     volumes:

@@ -102,6 +102,16 @@ export const api = {
     form.append("file", file);
     return apiFetch<CsvImportResult>("/api/import/bank-csv", { method: "POST", body: form });
   },
+  importOfxPreview: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return apiFetch<CsvPreviewResult>("/api/import/bank-ofx/preview", { method: "POST", body: form });
+  },
+  importOfx: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return apiFetch<CsvImportResult>("/api/import/bank-ofx", { method: "POST", body: form });
+  },
 };
 
 export function asNumber(value: string | number | null | undefined) {
