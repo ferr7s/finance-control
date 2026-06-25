@@ -41,6 +41,9 @@ BANK_SENDERS = [
 NUBANK_STATEMENT_SENDER = "todomundo@nubank.com.br"
 NUBANK_STATEMENT_SUBJECT = "Extrato da sua conta do Nubank"
 
+FLASH_STATEMENT_SENDER = "noreply@flashapp.com.br"
+FLASH_STATEMENT_SUBJECT = "Seu extrato Flash chegou!"
+
 # ---------------------------------------------------------------------------
 # Regex patterns — adjust after inspecting real email bodies
 # ---------------------------------------------------------------------------
@@ -242,6 +245,23 @@ def _fetch_nubank_statements(imap: imaplib.IMAP4_SSL) -> list[tuple[bytes, Messa
     return result
 
 
+def _fetch_flash_statements(imap: imaplib.IMAP4_SSL) -> list[tuple[bytes, Message]]:
+    """Return (uid, Message) for Flash statement emails from the last 60 days."""
+    imap.select("INBOX")
+    since = (datetime.now(timezone.utc) - timedelta(days=60)).strftime("%d-%b-%Y")
+    _, data = imap.uid(
+        "search", None,
+        f'(FROM "{FLASH_STATEMENT_SENDER}" SUBJECT "{FLASH_STATEMENT_SUBJECT}" SINCE {since})',
+    )
+    uids = data[0].split() if data and data[0] else []
+    result = []
+    for uid in uids:
+        _, msg_data = imap.uid("fetch", uid, "(RFC822)")
+        if msg_data and msg_data[0]:
+            result.append((uid, message_from_bytes(msg_data[0][1])))
+    return result
+
+
 def run_email_sync(db: Session) -> dict:
     """
     Main entry point: connect to Gmail, parse transaction emails, import.
@@ -324,6 +344,30 @@ def run_email_sync(db: Session) -> dict:
                     errors.append(f"Nubank statement error: {exc}")
         except Exception as exc:
             errors.append(f"Nubank statement fetch error: {exc}")
+
+        # Flash monthly statement (CSV attachment)
+        try:
+            flash_emails = _fetch_flash_statements(imap)
+            logger.info("Found %d Flash statement email(s)", len(flash_emails))
+            for uid, msg in flash_emails:
+                try:
+                    csv_bytes = _get_attachment_by_ext(msg, ".csv")
+                    if not csv_bytes:
+                        logger.info("Flash statement email has no CSV attachment, skipping")
+                        continue
+                    result = import_bank_csv(db, csv_bytes)
+                    imported += result.get("imported", 0)
+                    ignored += result.get("ignored", 0)
+                    errors.extend(result.get("errors", []))
+                    logger.info(
+                        "Flash statement imported: %d new, %d ignored",
+                        result.get("imported", 0),
+                        result.get("ignored", 0),
+                    )
+                except Exception as exc:
+                    errors.append(f"Flash statement error: {exc}")
+        except Exception as exc:
+            errors.append(f"Flash statement fetch error: {exc}")
 
         imap.logout()
 
