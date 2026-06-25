@@ -174,15 +174,10 @@ def connect_imap() -> imaplib.IMAP4_SSL:
     return imap
 
 
-def _fetch_recent_from_sender(imap: imaplib.IMAP4_SSL, sender: str, days: int = 30) -> list[tuple[bytes, Message]]:
-    """Return (uid, Message) for emails from `sender` in the last `days` days.
-
-    Does NOT filter by read/unread — deduplication via Message-ID prevents
-    re-importing emails the user already opened before the sync ran.
-    """
+def _fetch_unseen_from_sender(imap: imaplib.IMAP4_SSL, sender: str) -> list[tuple[bytes, Message]]:
+    """Return (uid, Message) for unread emails from `sender`."""
     imap.select("INBOX")
-    since = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%d-%b-%Y")
-    _, data = imap.uid("search", None, f'(FROM "{sender}" SINCE {since})')
+    _, data = imap.uid("search", None, f'(UNSEEN FROM "{sender}")')
     uids = data[0].split() if data and data[0] else []
     result = []
     for uid in uids:
@@ -287,8 +282,8 @@ def run_email_sync(db: Session) -> dict:
         for provider, sender in BANK_SENDERS:
             parser = PARSERS[provider]
             try:
-                emails = _fetch_recent_from_sender(imap, sender)
-                logger.info("Found %d recent emails from %s (%s)", len(emails), provider, sender)
+                emails = _fetch_unseen_from_sender(imap, sender)
+                logger.info("Found %d unread emails from %s (%s)", len(emails), provider, sender)
             except Exception as exc:
                 errors.append(f"IMAP fetch error for {provider}: {exc}")
                 continue
