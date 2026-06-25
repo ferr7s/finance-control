@@ -103,9 +103,25 @@ def _get_text_body(msg: Message) -> str:
     return body
 
 
+NUBANK_INTERNAL_TRANSFER_SENDERS = {
+    "flash tecnologia",
+    "flash tecnologia e instituicao de pagamento",
+}
+
+
+def _is_internal_transfer(body: str) -> bool:
+    """Return True if the Nubank Pix was sent by one of our own accounts (e.g. Flash)."""
+    lower = body.lower()
+    return any(sender in lower for sender in NUBANK_INTERNAL_TRANSFER_SENDERS)
+
+
 def _parse_nubank_email(msg: Message) -> dict | None:
     body = _get_text_body(msg)
     logger.debug("Nubank email body:\n%s", body[:2000])
+
+    if _is_internal_transfer(body):
+        logger.info("Skipping Nubank Pix — internal transfer from own account")
+        return None
 
     amount_m = NUBANK_AMOUNT_RE.search(body)
     desc_m = NUBANK_DESC_RE.search(body)
