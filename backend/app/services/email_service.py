@@ -12,7 +12,7 @@ import imaplib
 import json
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from email import message_from_bytes
 from email.message import Message
@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.models.email_sync_job import EmailSyncJob
 from app.schemas.transaction import TransactionCreate
+from app.services.import_service import import_bank_csv
 from app.services.transactions_service import create_transaction, find_duplicate
 
 logger = logging.getLogger(__name__)
@@ -36,6 +37,10 @@ BANK_SENDERS = [
     ("itau", "itaucard@itau.com.br"),
     ("flash", "noreply@flashapp.com.br"),
 ]
+
+# Nubank monthly statement email (contains CSV attachment)
+NUBANK_STATEMENT_SENDER = "todomundo@nubank.com.br"
+NUBANK_STATEMENT_SUBJECT = "Extrato da sua conta do Nubank"
 
 # ---------------------------------------------------------------------------
 # Regex patterns — adjust after inspecting real email bodies
@@ -191,6 +196,34 @@ def _make_external_id(provider: str, msg: Message) -> str:
     return f"email:{provider}:{msg_id}" if msg_id else f"email:{provider}:{msg.get('Date', '')}"
 
 
+def _get_csv_attachment(msg: Message) -> bytes | None:
+    """Return bytes of the first CSV attachment found in the message."""
+    for part in msg.walk():
+        filename = part.get_filename() or ""
+        if filename.lower().endswith(".csv"):
+            payload = part.get_payload(decode=True)
+            if payload:
+                return payload
+    return None
+
+
+def _fetch_nubank_statements(imap: imaplib.IMAP4_SSL) -> list[tuple[bytes, Message]]:
+    """Return (uid, Message) for Nubank statement emails from the last 60 days."""
+    imap.select("INBOX")
+    since = (datetime.now(timezone.utc) - timedelta(days=60)).strftime("%d-%b-%Y")
+    _, data = imap.uid(
+        "search", None,
+        f'(FROM "{NUBANK_STATEMENT_SENDER}" SUBJECT "{NUBANK_STATEMENT_SUBJECT}" SINCE {since})',
+    )
+    uids = data[0].split() if data and data[0] else []
+    result = []
+    for uid in uids:
+        _, msg_data = imap.uid("fetch", uid, "(RFC822)")
+        if msg_data and msg_data[0]:
+            result.append((uid, message_from_bytes(msg_data[0][1])))
+    return result
+
+
 def run_email_sync(db: Session) -> dict:
     """
     Main entry point: connect to Gmail, parse transaction emails, import.
@@ -251,6 +284,32 @@ def run_email_sync(db: Session) -> dict:
                 except Exception as exc:
                     errors.append(f"{provider} email error: {exc}")
                     ignored += 1
+
+        # Nubank monthly statement (CSV attachment)
+        try:
+            statement_emails = _fetch_nubank_statements(imap)
+            logger.info("Found %d Nubank statement email(s)", len(statement_emails))
+            for uid, msg in statement_emails:
+                try:
+                    csv_bytes = _get_csv_attachment(msg)
+                    if not csv_bytes:
+                        logger.warning("Nubank statement email has no CSV attachment")
+                        _mark_seen(imap, uid)
+                        continue
+                    result = import_bank_csv(db, csv_bytes)
+                    imported += result.get("imported", 0)
+                    ignored += result.get("ignored", 0)
+                    errors.extend(result.get("errors", []))
+                    _mark_seen(imap, uid)
+                    logger.info(
+                        "Nubank statement imported: %d new, %d ignored",
+                        result.get("imported", 0),
+                        result.get("ignored", 0),
+                    )
+                except Exception as exc:
+                    errors.append(f"Nubank statement error: {exc}")
+        except Exception as exc:
+            errors.append(f"Nubank statement fetch error: {exc}")
 
         imap.logout()
 
