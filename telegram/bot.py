@@ -161,9 +161,8 @@ async def cmd_saldo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             total += balance
             provider = acc.get("provider", "").lower()
             label = provider_labels.get(provider, f"🏦 {acc.get('provider', 'Outro')}")
-            name = acc.get("name", "")
             sign = "+" if balance >= 0 else ""
-            lines.append(f"{label} — {name}: {sign}{_fmt_brl(balance)}")
+            lines.append(f"{label}: {sign}{_fmt_brl(balance)}")
 
         lines.append(f"\n*Total: {_fmt_brl(total)}*")
         await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
