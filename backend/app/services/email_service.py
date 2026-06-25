@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.models.email_sync_job import EmailSyncJob
 from app.schemas.transaction import TransactionCreate
-from app.services.import_service import import_bank_csv
+from app.services.import_service import import_bank_csv, import_bank_ofx
 from app.services.transactions_service import create_transaction, find_duplicate
 
 logger = logging.getLogger(__name__)
@@ -200,25 +200,40 @@ def _make_external_id(provider: str, msg: Message) -> str:
     return f"email:{provider}:{msg_id}" if msg_id else f"email:{provider}:{msg.get('Date', '')}"
 
 
-def _get_csv_attachment(msg: Message) -> bytes | None:
-    """Return bytes of the first CSV attachment found in the message."""
+def _get_attachment_by_ext(msg: Message, ext: str) -> bytes | None:
+    """Return bytes of the first attachment with the given extension."""
     for part in msg.walk():
         filename = part.get_filename() or ""
-        if filename.lower().endswith(".csv"):
+        if filename.lower().endswith(ext):
             payload = part.get_payload(decode=True)
             if payload:
                 return payload
     return None
 
 
+def _get_statement_attachment(msg: Message) -> tuple[bytes, str] | tuple[None, None]:
+    """
+    Return (bytes, format) for the best available statement attachment.
+    Prefers OFX over CSV because Nubank's CSV export is often empty or header-only.
+    """
+    ofx = _get_attachment_by_ext(msg, ".ofx")
+    if ofx and len(ofx) > 100:
+        return ofx, "ofx"
+    csv = _get_attachment_by_ext(msg, ".csv")
+    if csv and len(csv) > 50:
+        return csv, "csv"
+    return None, None
+
+
 def _fetch_nubank_statements(imap: imaplib.IMAP4_SSL) -> list[tuple[bytes, Message]]:
-    """Return (uid, Message) for Nubank statement emails from the last 60 days."""
+    """
+    Return (uid, Message) for Nubank statement/fatura emails from the last 60 days.
+    Searches only by sender — Nubank uses different subjects for account statements
+    and credit card bills, so we handle all of them.
+    """
     imap.select("INBOX")
     since = (datetime.now(timezone.utc) - timedelta(days=60)).strftime("%d-%b-%Y")
-    _, data = imap.uid(
-        "search", None,
-        f'(FROM "{NUBANK_STATEMENT_SENDER}" SUBJECT "{NUBANK_STATEMENT_SUBJECT}" SINCE {since})',
-    )
+    _, data = imap.uid("search", None, f'(FROM "{NUBANK_STATEMENT_SENDER}" SINCE {since})')
     uids = data[0].split() if data and data[0] else []
     result = []
     for uid in uids:
@@ -292,11 +307,12 @@ def run_email_sync(db: Session) -> dict:
             logger.info("Found %d Nubank statement email(s)", len(statement_emails))
             for uid, msg in statement_emails:
                 try:
-                    csv_bytes = _get_csv_attachment(msg)
-                    if not csv_bytes:
-                        logger.warning("Nubank statement email has no CSV attachment")
+                    attachment, fmt = _get_statement_attachment(msg)
+                    if attachment is None:
+                        logger.info("Nubank email '%s' has no OFX/CSV attachment, skipping", msg.get("Subject", ""))
                         continue
-                    result = import_bank_csv(db, csv_bytes)
+                    logger.info("Nubank statement using %s (%d bytes): %s", fmt, len(attachment), msg.get("Subject", ""))
+                    result = import_bank_ofx(db, attachment) if fmt == "ofx" else import_bank_csv(db, attachment)
                     imported += result.get("imported", 0)
                     ignored += result.get("ignored", 0)
                     errors.extend(result.get("errors", []))
