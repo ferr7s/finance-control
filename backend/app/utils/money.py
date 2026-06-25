@@ -13,7 +13,8 @@ def to_decimal(value: Decimal | int | str | float | None) -> Decimal:
 
 
 def parse_money(value: str) -> Decimal:
-    normalized = value.strip().replace("R$", "").replace(" ", "")
+    import re
+    normalized = re.sub(r"[\s\xa0]+", "", value.strip().replace("R$", ""))
     if not normalized:
         return Decimal("0.00")
 
