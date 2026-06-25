@@ -1,15 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Save } from "lucide-react";
+import { Check } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { TransactionFilters } from "@/components/transactions/transaction-filters";
 import { api } from "@/lib/api";
 import { currency, shortDate } from "@/lib/formatters";
 import type { Transaction, TransactionQueryFilters } from "@/types";
 
-const categories = ["alimentação", "transporte", "saúde", "assinaturas", "moradia", "renda", "investimentos", "lazer", "outros"];
+const categories = ["alimentação", "transporte", "saúde", "assinaturas", "moradia", "renda", "investimentos", "lazer", "educação", "vestuário", "beleza", "pets", "outros"];
 
 function toApiFilters(filters: TransactionQueryFilters): TransactionQueryFilters {
   return {
@@ -35,7 +34,7 @@ function accountOrCardLabel(transaction: Transaction) {
 export function TransactionsTable({ initialTransactions }: { initialTransactions: Transaction[] }) {
   const [transactions, setTransactions] = useState(initialTransactions);
   const [filters, setFilters] = useState<TransactionQueryFilters>({});
-  const [saving, setSaving] = useState<string | null>(null);
+  const [saved, setSaved] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,12 +61,13 @@ export function TransactionsTable({ initialTransactions }: { initialTransactions
   }
 
   async function updateCategory(transaction: Transaction, category: string) {
-    setSaving(transaction.id);
     try {
       const updated = await api.updateTransaction(transaction.id, { category });
       setTransactions((current) => current.map((item) => (item.id === updated.id ? updated : item)));
-    } finally {
-      setSaving(null);
+      setSaved(transaction.id);
+      setTimeout(() => setSaved((current) => (current === transaction.id ? null : current)), 1500);
+    } catch {
+      // silently ignore — filters will reload fresh state on next apply
     }
   }
 
@@ -95,7 +95,6 @@ export function TransactionsTable({ initialTransactions }: { initialTransactions
               <th className="px-3 py-3">Conta/cartão</th>
               <th className="px-3 py-3">Provedor</th>
               <th className="px-3 py-3">Tipo</th>
-              <th className="px-3 py-3">Ações</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -107,31 +106,29 @@ export function TransactionsTable({ initialTransactions }: { initialTransactions
                   {currency(tx.amount)}
                 </td>
                 <td className="px-3 py-3">
-                  <select
-                    className="h-8 border border-border bg-black px-2 text-xs"
-                    defaultValue={tx.category || "outros"}
-                    onChange={(event) => updateCategory(tx, event.target.value)}
-                  >
-                    {categories.map((category) => (
-                      <option key={category} value={category}>
-                        {category}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex items-center gap-1">
+                    <select
+                      className="h-8 border border-border bg-black px-2 text-xs"
+                      defaultValue={tx.category || "outros"}
+                      onChange={(event) => updateCategory(tx, event.target.value)}
+                    >
+                      {categories.map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                    </select>
+                    {saved === tx.id ? <Check size={12} className="text-success shrink-0" /> : null}
+                  </div>
                 </td>
                 <td className="px-3 py-3 text-white/40">{accountOrCardLabel(tx)}</td>
                 <td className="px-3 py-3 text-white/40">{tx.provider}</td>
                 <td className="px-3 py-3 text-white/40">{tx.type}</td>
-                <td className="px-3 py-3">
-                  <Button className="size-8 px-0" disabled={saving === tx.id} title="Categoria salva ao alterar">
-                    <Save size={14} />
-                  </Button>
-                </td>
               </tr>
             ))}
             {transactions.length === 0 ? (
               <tr className="bg-muted/35">
-                <td className="px-3 py-6 text-center text-white/30" colSpan={8}>
+                <td className="px-3 py-6 text-center text-white/30" colSpan={7}>
                   Nenhuma transação encontrada para os filtros aplicados.
                 </td>
               </tr>

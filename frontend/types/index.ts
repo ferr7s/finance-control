@@ -153,3 +153,30 @@ export type SyncStatus = {
   error?: string | null;
   synced_at?: string | null;
 };
+
+export type CsvPreviewRow = {
+  status: "ready" | "duplicate";
+  external_id: string;
+  date: string;
+  description: string;
+  amount: string;
+  type: string;
+  category: string;
+  provider: string;
+  payment_method: string;
+};
+
+export type CsvPreviewResult = {
+  total_rows: number;
+  importable: number;
+  duplicates: number;
+  errors: string[];
+  sample_rows: CsvPreviewRow[];
+};
+
+export type CsvImportResult = {
+  total_rows: number;
+  imported: number;
+  ignored: number;
+  errors: string[];
+};

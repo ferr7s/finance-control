@@ -1,0 +1,275 @@
+"""
+Gmail IMAP email parsing service.
+
+Connects to Gmail via IMAP (App Password), reads unseen transaction emails
+from Nubank, Itaú and Flash, parses them with configurable regex patterns,
+and imports the transactions using the existing create_transaction pipeline.
+
+Parser patterns are constants at the top of this file — adjust them after
+inspecting real email bodies (logged at DEBUG level on first run).
+"""
+import imaplib
+import json
+import logging
+import re
+from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
+from email import message_from_bytes
+from email.message import Message
+
+from sqlalchemy.orm import Session
+
+from app.core.config import get_settings
+from app.models.email_sync_job import EmailSyncJob
+from app.schemas.transaction import TransactionCreate
+from app.services.transactions_service import create_transaction, find_duplicate
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Bank sender configuration
+# Each entry: (provider_name, sender_email, parser_function)
+# ---------------------------------------------------------------------------
+
+BANK_SENDERS = [
+    ("nubank", "noreply@nubank.com.br"),
+    ("itau", "itaucard@itau.com.br"),
+    ("flash", "noreply@flashapp.com.br"),
+]
+
+# ---------------------------------------------------------------------------
+# Regex patterns — adjust after inspecting real email bodies
+# ---------------------------------------------------------------------------
+
+# Nubank: "Compra de R$ 123,45 aprovada em Mercado Livre"
+NUBANK_AMOUNT_RE = re.compile(r"R\$\s*([\d\.]+,\d{2})", re.IGNORECASE)
+NUBANK_DESC_RE = re.compile(r"aprovada\s+em\s+(.+?)(?:\.|$)", re.IGNORECASE | re.DOTALL)
+NUBANK_DATE_RE = re.compile(r"(\d{2}/\d{2}/\d{4})")
+
+# Itaú: "Compra de R$ 123,45 realizada em 23/06/2026 em POSTO SHELL"
+ITAU_AMOUNT_RE = re.compile(r"R\$\s*([\d\.]+,\d{2})", re.IGNORECASE)
+ITAU_DESC_RE = re.compile(r"em\s+\d{2}/\d{2}/\d{4}\s+em\s+(.+?)(?:\.|$)", re.IGNORECASE | re.DOTALL)
+ITAU_DATE_RE = re.compile(r"(\d{2}/\d{2}/\d{4})")
+
+# Flash: "Você usou R$ 123,45 no estabelecimento Restaurante XYZ"
+FLASH_AMOUNT_RE = re.compile(r"R\$\s*([\d\.]+,\d{2})", re.IGNORECASE)
+FLASH_DESC_RE = re.compile(r"no\s+estabelecimento\s+(.+?)(?:\.|$)", re.IGNORECASE | re.DOTALL)
+FLASH_DATE_RE = re.compile(r"(\d{2}/\d{2}/\d{4})")
+
+
+def _parse_brl(value: str) -> Decimal | None:
+    """Convert Brazilian currency string '1.234,56' to Decimal."""
+    try:
+        normalized = value.replace(".", "").replace(",", ".")
+        return Decimal(normalized)
+    except InvalidOperation:
+        return None
+
+
+def _parse_date_br(value: str) -> datetime | None:
+    """Parse 'DD/MM/YYYY' to UTC datetime."""
+    try:
+        return datetime.strptime(value, "%d/%m/%Y").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+
+def _get_text_body(msg: Message) -> str:
+    """Extract plain text or HTML body from an email message."""
+    body = ""
+    if msg.is_multipart():
+        for part in msg.walk():
+            content_type = part.get_content_type()
+            if content_type == "text/plain":
+                payload = part.get_payload(decode=True)
+                if payload:
+                    body = payload.decode(part.get_content_charset() or "utf-8", errors="replace")
+                    break
+            elif content_type == "text/html" and not body:
+                payload = part.get_payload(decode=True)
+                if payload:
+                    body = payload.decode(part.get_content_charset() or "utf-8", errors="replace")
+    else:
+        payload = msg.get_payload(decode=True)
+        if payload:
+            body = payload.decode(msg.get_content_charset() or "utf-8", errors="replace")
+    return body
+
+
+def _parse_nubank_email(msg: Message) -> dict | None:
+    body = _get_text_body(msg)
+    logger.debug("Nubank email body:\n%s", body[:2000])
+
+    amount_m = NUBANK_AMOUNT_RE.search(body)
+    desc_m = NUBANK_DESC_RE.search(body)
+    date_m = NUBANK_DATE_RE.search(body)
+
+    if not amount_m:
+        logger.warning("Could not parse amount from Nubank email")
+        return None
+
+    amount = _parse_brl(amount_m.group(1))
+    description = desc_m.group(1).strip() if desc_m else "Nubank"
+    date = _parse_date_br(date_m.group(1)) if date_m else datetime.now(timezone.utc)
+
+    return {"amount": amount, "description": description, "date": date, "provider": "nubank"}
+
+
+def _parse_itau_email(msg: Message) -> dict | None:
+    body = _get_text_body(msg)
+    logger.debug("Itaú email body:\n%s", body[:2000])
+
+    amount_m = ITAU_AMOUNT_RE.search(body)
+    desc_m = ITAU_DESC_RE.search(body)
+    date_m = ITAU_DATE_RE.search(body)
+
+    if not amount_m:
+        logger.warning("Could not parse amount from Itaú email")
+        return None
+
+    amount = _parse_brl(amount_m.group(1))
+    description = desc_m.group(1).strip() if desc_m else "Itaú"
+    date = _parse_date_br(date_m.group(1)) if date_m else datetime.now(timezone.utc)
+
+    return {"amount": amount, "description": description, "date": date, "provider": "itau"}
+
+
+def _parse_flash_email(msg: Message) -> dict | None:
+    body = _get_text_body(msg)
+    logger.debug("Flash email body:\n%s", body[:2000])
+
+    amount_m = FLASH_AMOUNT_RE.search(body)
+    desc_m = FLASH_DESC_RE.search(body)
+    date_m = FLASH_DATE_RE.search(body)
+
+    if not amount_m:
+        logger.warning("Could not parse amount from Flash email")
+        return None
+
+    amount = _parse_brl(amount_m.group(1))
+    description = desc_m.group(1).strip() if desc_m else "Flash"
+    date = _parse_date_br(date_m.group(1)) if date_m else datetime.now(timezone.utc)
+
+    return {"amount": amount, "description": description, "date": date, "provider": "flash"}
+
+
+PARSERS = {
+    "nubank": _parse_nubank_email,
+    "itau": _parse_itau_email,
+    "flash": _parse_flash_email,
+}
+
+
+def connect_imap() -> imaplib.IMAP4_SSL:
+    settings = get_settings()
+    imap = imaplib.IMAP4_SSL("imap.gmail.com", 993)
+    imap.login(settings.gmail_address, settings.gmail_app_password)
+    return imap
+
+
+def _fetch_unseen_from_sender(imap: imaplib.IMAP4_SSL, sender: str) -> list[tuple[bytes, Message]]:
+    """Return list of (uid, Message) for unseen emails from `sender`."""
+    imap.select("INBOX")
+    _, data = imap.uid("search", None, f'(UNSEEN FROM "{sender}")')
+    uids = data[0].split() if data and data[0] else []
+    result = []
+    for uid in uids:
+        _, msg_data = imap.uid("fetch", uid, "(RFC822)")
+        if msg_data and msg_data[0]:
+            raw = msg_data[0][1]
+            result.append((uid, message_from_bytes(raw)))
+    return result
+
+
+def _mark_seen(imap: imaplib.IMAP4_SSL, uid: bytes) -> None:
+    imap.uid("store", uid, "+FLAGS", "\\Seen")
+
+
+def _make_external_id(provider: str, msg: Message) -> str:
+    """Build a stable external_id from Message-ID header + provider."""
+    msg_id = msg.get("Message-ID", "").strip()
+    return f"email:{provider}:{msg_id}" if msg_id else f"email:{provider}:{msg.get('Date', '')}"
+
+
+def run_email_sync(db: Session) -> dict:
+    """
+    Main entry point: connect to Gmail, parse transaction emails, import.
+    Returns {'imported': N, 'ignored': N, 'errors': [...]}.
+    """
+    settings = get_settings()
+
+    if not settings.gmail_address or not settings.gmail_app_password:
+        return {"imported": 0, "ignored": 0, "errors": ["GMAIL_ADDRESS or GMAIL_APP_PASSWORD not configured"]}
+
+    job = EmailSyncJob(status="running")
+    db.add(job)
+    db.commit()
+    db.refresh(job)
+
+    imported = 0
+    ignored = 0
+    errors: list[str] = []
+
+    try:
+        imap = connect_imap()
+
+        for provider, sender in BANK_SENDERS:
+            parser = PARSERS[provider]
+            try:
+                emails = _fetch_unseen_from_sender(imap, sender)
+                logger.info("Found %d unseen emails from %s (%s)", len(emails), provider, sender)
+            except Exception as exc:
+                errors.append(f"IMAP fetch error for {provider}: {exc}")
+                continue
+
+            for uid, msg in emails:
+                try:
+                    parsed = parser(msg)
+                    if not parsed:
+                        ignored += 1
+                        _mark_seen(imap, uid)
+                        continue
+
+                    external_id = _make_external_id(provider, msg)
+                    if find_duplicate(db, provider, external_id):
+                        ignored += 1
+                        _mark_seen(imap, uid)
+                        continue
+
+                    payload = TransactionCreate(
+                        external_id=external_id,
+                        provider=parsed["provider"],
+                        date=parsed["date"],
+                        description=parsed["description"],
+                        amount=-abs(parsed["amount"]),  # email notifications are always expenses
+                        payment_method="email",
+                    )
+                    create_transaction(db, payload)
+                    _mark_seen(imap, uid)
+                    imported += 1
+
+                except Exception as exc:
+                    errors.append(f"{provider} email error: {exc}")
+                    ignored += 1
+
+        imap.logout()
+
+    except Exception as exc:
+        errors.append(f"IMAP connection error: {exc}")
+        logger.exception("Email sync failed")
+
+    job.status = "done" if not errors else "failed"
+    job.imported = imported
+    job.ignored = ignored
+    job.errors = json.dumps(errors) if errors else None
+    job.completed_at = datetime.now(timezone.utc)
+    db.commit()
+
+    logger.info("Email sync complete: imported=%d ignored=%d errors=%d", imported, ignored, len(errors))
+    return {"imported": imported, "ignored": ignored, "errors": errors}
+
+
+def get_last_email_sync(db: Session) -> EmailSyncJob | None:
+    from sqlalchemy import select
+    stmt = select(EmailSyncJob).order_by(EmailSyncJob.started_at.desc()).limit(1)
+    return db.scalar(stmt)

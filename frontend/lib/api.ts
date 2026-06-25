@@ -5,6 +5,8 @@ import type {
   AgentTool,
   CategoryBreakdownItem,
   CreditCard,
+  CsvImportResult,
+  CsvPreviewResult,
   SyncStatus,
   CreditCardBill,
   CreditCardSummary,
@@ -89,7 +91,17 @@ export const api = {
   triggerSync: () => apiFetch<SyncStatus[]>("/api/sync", { method: "POST", body: "{}" }),
   triggerSyncBank: (bank: string) => apiFetch<SyncStatus[]>(`/api/sync/${bank}`, { method: "POST", body: "{}" }),
   syncStatus: () => apiFetch<SyncStatus[]>("/api/sync/status"),
-  manifest: () => apiFetch<{ tools: AgentTool[] }>("/agent_tools_manifest.json")
+  manifest: () => apiFetch<{ tools: AgentTool[] }>("/agent_tools_manifest.json"),
+  importCsvPreview: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return apiFetch<CsvPreviewResult>("/api/import/bank-csv/preview", { method: "POST", body: form });
+  },
+  importCsv: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return apiFetch<CsvImportResult>("/api/import/bank-csv", { method: "POST", body: form });
+  },
 };
 
 export function asNumber(value: string | number | null | undefined) {

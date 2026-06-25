@@ -39,5 +39,19 @@ services:
     depends_on:
       - backend
 
+  telegram:
+    build:
+      context: ./telegram
+    env_file:
+      - .env.example
+    environment:
+      FINANCE_CONTROL_API_URL: http://backend:8000
+    volumes:
+      - telegram_data:/app/data
+    depends_on:
+      - backend
+    restart: unless-stopped
+
 volumes:
   postgres_data:
+  telegram_data:
